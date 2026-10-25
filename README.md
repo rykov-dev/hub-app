@@ -45,5 +45,5 @@ bun run deploy
 (локально это `enable_confirmations = false` в `supabase/config.toml`), иначе после регистрации
 Supabase будет ждать подтверждения по почте.
 
-Фронтенд (`bun run build` → `dist/`) можно выложить на любой статический хостинг, задав
-`PUBLIC_SUPABASE_URL` и `PUBLIC_SUPABASE_PUBLISHABLE_KEY` при сборке.
+Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` при каждом push в `main`
+(Settings → Pages → Source: GitHub Actions). Сайт: https://rykov-dev.github.io/hub-app/
