@@ -178,6 +178,28 @@ h2 { margin: 0 0 8px; font-size: 1rem; }
 
 .login-form { display: flex; flex-direction: column; gap: 12px; }
 
+.oauth { display: flex; flex-direction: column; gap: 12px; }
+.btn-oauth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
 .input {
   padding: 12px 14px;
   font: inherit;

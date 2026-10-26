@@ -1,7 +1,8 @@
 # Монетки
 
 React + Rsbuild фронтенд, Supabase (Postgres, Auth, Edge Functions) вместо бэкенда.
-Вход по email и паролю (Supabase Auth), без подтверждения почты и без отправки писем.
+Вход через Google, GitHub или по email и паролю (Supabase Auth), без подтверждения почты
+и без отправки писем.
 
 ## Правила наград
 
@@ -44,6 +45,11 @@ bun run deploy
 В Dashboard → Authentication → Sign In / Providers → Email выключить «Confirm email»
 (локально это `enable_confirmations = false` в `supabase/config.toml`), иначе после регистрации
 Supabase будет ждать подтверждения по почте.
+
+Google и GitHub включаются в Dashboard → Authentication → Sign In / Providers (ключи OAuth-приложений
+хранятся только там). Callback URL в OAuth-приложениях:
+`https://vfnpkkzaxsraakeacchg.supabase.co/auth/v1/callback`. Адреса, куда можно вернуться после входа,
+заданы в `additional_redirect_urls` в `supabase/config.toml`.
 
 Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` при каждом push в `main`
 (Settings → Pages → Source: GitHub Actions). Сайт: https://rykov-dev.github.io/hub-app/
