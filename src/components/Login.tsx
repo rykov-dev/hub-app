@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { ThemeToggle } from './ThemeToggle';
 
 type Mode = 'signIn' | 'signUp';
 
@@ -24,44 +25,49 @@ export const Login = () => {
   };
 
   return (
-    <main className="card login">
-      <h1>Монетки</h1>
-      <p className="muted">Заходи каждый день и собирай монетки.</p>
-      <form className="login-form" onSubmit={onSubmit}>
-        <input
-          type="email"
-          className="input"
-          placeholder="you@example.com"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          className="input"
-          placeholder="Пароль"
-          autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
-          minLength={6}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button type="submit" className="btn" disabled={pending}>
-          {mode === 'signIn' ? 'Войти' : 'Зарегистрироваться'}
+    <div className="layout layout-center">
+      <main className="card login area-login">
+        <div className="login-top">
+          <ThemeToggle />
+        </div>
+        <h1>Монетки</h1>
+        <p className="muted">Заходи каждый день и собирай монетки.</p>
+        <form className="login-form" onSubmit={onSubmit}>
+          <input
+            type="email"
+            className="input"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            type="password"
+            className="input"
+            placeholder="Пароль"
+            autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+            minLength={6}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary" disabled={pending}>
+            {mode === 'signIn' ? 'Войти' : 'Зарегистрироваться'}
+          </button>
+        </form>
+        {error && <p className="error">{error}</p>}
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            setMode(mode === 'signIn' ? 'signUp' : 'signIn');
+            setError(null);
+          }}
+        >
+          {mode === 'signIn' ? 'Нет аккаунта? Регистрация' : 'Уже есть аккаунт? Войти'}
         </button>
-      </form>
-      {error && <p className="error">{error}</p>}
-      <button
-        type="button"
-        className="link"
-        onClick={() => {
-          setMode(mode === 'signIn' ? 'signUp' : 'signIn');
-          setError(null);
-        }}
-      >
-        {mode === 'signIn' ? 'Нет аккаунта? Регистрация' : 'Уже есть аккаунт? Войти'}
-      </button>
-    </main>
+      </main>
+    </div>
   );
 };

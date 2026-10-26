@@ -6,15 +6,8 @@ import { useSession } from './hooks/useSession';
 const App = () => {
   const session = useSession();
 
-  return (
-    <div className="content">
-      {session === undefined ? null : session ? (
-        <Dashboard user={session.user} />
-      ) : (
-        <Login />
-      )}
-    </div>
-  );
+  if (session === undefined) return null;
+  return session ? <Dashboard user={session.user} /> : <Login />;
 };
 
 export default App;

@@ -3,6 +3,7 @@ import { useRewards } from '../hooks/useRewards';
 import type { CoinTransaction } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { SessionTimer } from './SessionTimer';
+import { ThemeToggle } from './ThemeToggle';
 
 const reasonLabels: Record<CoinTransaction['reason'], string> = {
   daily_visit: 'Ежедневный визит',
@@ -14,46 +15,61 @@ export const Dashboard = ({ user }: { user: User }) => {
   const { profile, transactions, dailyClaim, activity, error } = useRewards(user.id);
 
   if (!profile) {
-    return <main className="card">{error ? <p className="error">{error}</p> : 'Загрузка…'}</main>;
+    return (
+      <div className="layout">
+        {error ? <p className="error">{error}</p> : <p className="muted">Загрузка…</p>}
+      </div>
+    );
   }
 
   return (
-    <main className="card">
-      <header className="header">
-        <span>{profile.display_name ?? user.email}</span>
-        <button type="button" className="link" onClick={() => supabase.auth.signOut()}>
-          Выйти
-        </button>
+    <div className="layout">
+      <header className="topbar">
+        <strong>Монетки</strong>
+        <div className="topbar-user">
+          <span className="muted">{profile.display_name ?? user.email}</span>
+          <button type="button" className="link" onClick={() => supabase.auth.signOut()}>
+            Выйти
+          </button>
+          <ThemeToggle />
+        </div>
       </header>
 
-      <div className="balance">
-        <span className="coin" aria-hidden>
-          ●
-        </span>
-        <strong>{profile.coins}</strong>
-      </div>
-
-      {dailyClaim?.claimed && (
-        <p className="toast">
-          +{dailyClaim.reward} за визит
-          {dailyClaim.streak_bonus > 0 && ` и +${dailyClaim.streak_bonus} за серию`}
-        </p>
-      )}
-
-      <section className="stats">
-        <div>
-          <span className="muted">Серия</span>
-          <strong>{profile.current_streak} дн.</strong>
+      <section className="card area-balance">
+        <h2>Баланс</h2>
+        <div className="balance">
+          <span className="coin" aria-hidden>
+            ●
+          </span>
+          <strong>{profile.coins}</strong>
         </div>
-        <div>
-          <span className="muted">Рекорд</span>
-          <strong>{profile.longest_streak} дн.</strong>
+        {dailyClaim?.claimed && (
+          <p className="toast">
+            +{dailyClaim.reward} за визит
+            {dailyClaim.streak_bonus > 0 && ` и +${dailyClaim.streak_bonus} за серию`}
+          </p>
+        )}
+      </section>
+
+      <section className="card area-streak">
+        <h2>Серия</h2>
+        <div className="stats">
+          <div>
+            <span className="muted">Текущая</span>
+            <strong>{profile.current_streak} дн.</strong>
+          </div>
+          <div>
+            <span className="muted">Рекорд</span>
+            <strong>{profile.longest_streak} дн.</strong>
+          </div>
         </div>
       </section>
 
-      <SessionTimer activity={activity} />
+      <div className="card area-timer">
+        <SessionTimer activity={activity} />
+      </div>
 
-      <section>
+      <section className="card area-history">
         <h2>История</h2>
         <ul className="history">
           {transactions.map((t) => (
@@ -67,6 +83,6 @@ export const Dashboard = ({ user }: { user: User }) => {
       </section>
 
       {error && <p className="error">{error}</p>}
-    </main>
+    </div>
   );
 };

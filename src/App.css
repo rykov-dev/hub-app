@@ -1,22 +1,65 @@
+/* Neutral greys with a single pine-green accent.
+   Theme follows the system unless <html data-theme="light|dark"> is set. */
 :root {
-  --bg: #f6f5f1;
+  color-scheme: light;
+  --bg: #f4f5f4;
   --card: #ffffff;
-  --text: #1c1b18;
-  --muted: #6f6c64;
-  --accent: #d9a21b;
-  --border: #e5e2da;
-  --error: #b3261e;
+  --text: #181c1b;
+  --muted: #5c6562;
+  --border: #dfe3e1;
+  --accent: #1e6b58;
+  --on-accent: #ffffff;
+  --coin: var(--accent);
+  --error: #b42318;
+
+  /* Layout grid: 4 columns on phones, 7 on tablets, 12 on desktops. */
+  --cols: 4;
+  --gutter: 16px;
+  --margin: 16px;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --cols: 7;
+    --gutter: 20px;
+    --margin: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --cols: 12;
+    --gutter: 24px;
+    --margin: 40px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121210;
-    --card: #1d1c19;
-    --text: #f1efe9;
-    --muted: #9c988e;
-    --border: #2e2c28;
-    --error: #f2b8b5;
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #0e1110;
+    --card: #161a19;
+    --text: #e2e6e4;
+    --muted: #8f9995;
+    --border: #262d2b;
+    --accent: #5bb397;
+    --on-accent: #0e1110;
+    --coin: var(--accent);
+    --error: #f29b8f;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0e1110;
+  --card: #161a19;
+  --text: #e2e6e4;
+  --muted: #8f9995;
+  --border: #262d2b;
+  --accent: #5bb397;
+  --on-accent: #0e1110;
+  --coin: var(--accent);
+  --error: #f29b8f;
 }
 
 body {
@@ -26,25 +69,66 @@ body {
   font-family: Inter, system-ui, Helvetica, Arial, sans-serif;
 }
 
-.content {
-  display: flex;
+.layout {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: var(--gutter);
+  align-content: start;
+  max-width: 1280px;
   min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
+  margin: 0 auto;
+  padding: var(--margin);
   box-sizing: border-box;
 }
 
+/* Every block spans the full row unless an area below says otherwise. */
+.layout > * { grid-column: 1 / -1; }
+
+.layout-center { align-content: center; }
+
+@media (min-width: 600px) {
+  .area-balance { grid-column: span 4; }
+  .area-streak { grid-column: span 3; }
+  .area-login { grid-column: 2 / span 5; }
+}
+
+@media (min-width: 1024px) {
+  .area-balance { grid-column: span 5; }
+  .area-streak { grid-column: span 3; }
+  .area-timer { grid-column: span 4; }
+  .area-login { grid-column: 5 / span 4; }
+}
+
 .card {
-  width: 100%;
-  max-width: 420px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 28px;
+  gap: 16px;
+  padding: 24px;
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.topbar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.topbar-user .muted {
+  display: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 600px) {
+  .topbar-user .muted { display: block; }
 }
 
 .login { text-align: center; }
@@ -67,6 +151,30 @@ h2 { margin: 0 0 8px; font-size: 1rem; }
 }
 .btn:hover { border-color: var(--accent); }
 .btn:disabled { opacity: 0.6; cursor: default; }
+.btn-primary {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.btn-primary:hover { filter: brightness(1.08); }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+
+.login-top { display: flex; justify-content: flex-end; margin-bottom: -16px; }
 
 .login-form { display: flex; flex-direction: column; gap: 12px; }
 
@@ -88,8 +196,6 @@ h2 { margin: 0 0 8px; font-size: 1rem; }
   cursor: pointer;
 }
 
-.header { display: flex; justify-content: space-between; align-items: center; }
-
 .balance {
   display: flex;
   align-items: center;
@@ -98,7 +204,7 @@ h2 { margin: 0 0 8px; font-size: 1rem; }
   font-size: 3rem;
   font-variant-numeric: tabular-nums;
 }
-.coin { color: var(--accent); }
+.coin { color: var(--coin); }
 
 .toast {
   margin: 0;
