@@ -1,13 +1,14 @@
 import './App.css';
-import { Dashboard } from './components/Dashboard';
-import { Login } from './components/Login';
+import { Loader } from './components/Loader';
 import { useSession } from './hooks/useSession';
+import { DashboardPage } from './pages/DashboardPage';
+import { LoginPage } from './pages/LoginPage';
 
 const App = () => {
   const session = useSession();
 
-  if (session === undefined) return null;
-  return session ? <Dashboard user={session.user} /> : <Login />;
+  if (session === undefined) return <Loader />;
+  return session ? <DashboardPage user={session.user} /> : <LoginPage />;
 };
 
 export default App;

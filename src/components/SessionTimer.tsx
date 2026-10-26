@@ -8,7 +8,12 @@ const formatTime = (totalSeconds: number) => {
 };
 
 /** Countdown to the time-on-site reward, extrapolated between heartbeats. */
-export const SessionTimer = ({ activity }: { activity: Activity | null }) => {
+type Props = {
+  activity: Activity | null;
+  className?: string;
+};
+
+export const SessionTimer = ({ activity, className = '' }: Props) => {
   const [now, setNow] = useState(Date.now);
 
   useEffect(() => {
@@ -19,7 +24,7 @@ export const SessionTimer = ({ activity }: { activity: Activity | null }) => {
 
   if (activity?.rewarded_today) {
     return (
-      <section className="timer">
+      <section className={`card timer ${className}`}>
         <span className="muted">Награда за 15 минут сегодня получена</span>
       </section>
     );
@@ -32,7 +37,7 @@ export const SessionTimer = ({ activity }: { activity: Activity | null }) => {
   const remaining = Math.ceil(required - elapsed);
 
   return (
-    <section className="timer">
+    <section className={`card timer ${className}`}>
       <span className="muted">До награды за 15 минут без перерыва</span>
       <strong className="timer-value">{formatTime(remaining)}</strong>
       <div className="progress">
