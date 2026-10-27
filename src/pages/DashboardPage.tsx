@@ -1,39 +1,14 @@
-import type { User } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
 import { BalanceCard } from '../components/BalanceCard';
 import { HistoryCard } from '../components/HistoryCard';
-import { InboxButton } from '../components/InboxButton';
-import { InboxNoteDialog } from '../components/InboxNoteDialog';
-import { Loader } from '../components/Loader';
 import { SessionTimer } from '../components/SessionTimer';
 import { StreakCard } from '../components/StreakCard';
-import { Topbar } from '../components/Topbar';
-import { useRewards } from '../hooks/useRewards';
+import { useAppContext } from '../layouts/AppLayout';
 
-export const DashboardPage = ({ user }: { user: User }) => {
-  const { profile, transactions, dailyClaim, activity, error, refresh } = useRewards(user.id);
-  const [inboxOpen, setInboxOpen] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!notice) return;
-    const id = setTimeout(() => setNotice(null), 2500);
-    return () => clearTimeout(id);
-  }, [notice]);
-
-  if (!profile) {
-    return error ? (
-      <div className="layout">
-        <p className="error">{error}</p>
-      </div>
-    ) : (
-      <Loader />
-    );
-  }
+export const DashboardPage = () => {
+  const { profile, transactions, dailyClaim, activity } = useAppContext();
 
   return (
-    <div className="layout layout-with-inbox">
-      <Topbar userName={profile.display_name ?? user.email ?? ''} />
+    <>
       <BalanceCard className="area-balance" coins={profile.coins} dailyClaim={dailyClaim} />
       <StreakCard
         className="area-streak"
@@ -42,22 +17,6 @@ export const DashboardPage = ({ user }: { user: User }) => {
       />
       <SessionTimer className="area-timer" activity={activity} />
       <HistoryCard className="area-history" transactions={transactions} />
-      {error && <p className="error">{error}</p>}
-
-      <InboxButton onClick={() => setInboxOpen(true)} />
-      <InboxNoteDialog
-        open={inboxOpen}
-        onClose={() => setInboxOpen(false)}
-        onSaved={(reward) => {
-          setNotice(`Сохранено в Inbox · +${reward} мон.`);
-          refresh();
-        }}
-      />
-      {notice && (
-        <p className="snackbar" role="status">
-          {notice}
-        </p>
-      )}
-    </div>
+    </>
   );
 };

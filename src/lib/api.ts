@@ -21,8 +21,17 @@ export type CoinTransaction = {
 export type InboxNote = {
   id: string;
   body: string;
+  tags: string[];
   created_at: string;
 };
+
+export type NoteComment = {
+  id: string;
+  body: string;
+  created_at: string;
+};
+
+const NOTE_COLUMNS = 'id, body, tags, created_at';
 
 export type DailyClaimResult = {
   claimed: boolean;
@@ -68,6 +77,16 @@ export const fetchTransactions = async (limit = 10): Promise<CoinTransaction[]> 
   return data;
 };
 
+export const fetchInboxNotes = async (limit = 100): Promise<InboxNote[]> => {
+  const { data, error } = await supabase
+    .from('inbox_notes')
+    .select(NOTE_COLUMNS)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+};
+
 /** Coins for an inbox note: 1 per character, as the server counts them (trimmed, code points). */
 export const inboxNoteReward = (body: string) => [...body.trim()].length;
 
@@ -75,6 +94,41 @@ export const addInboxNote = async (body: string): Promise<InboxNote> => {
   const { data, error } = await supabase
     .from('inbox_notes')
     .insert({ body })
+    .select(NOTE_COLUMNS)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const fetchInboxNote = async (id: string): Promise<InboxNote | null> => {
+  const { data, error } = await supabase
+    .from('inbox_notes')
+    .select(NOTE_COLUMNS)
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+};
+
+export const updateNoteTags = async (id: string, tags: string[]): Promise<void> => {
+  const { error } = await supabase.from('inbox_notes').update({ tags }).eq('id', id);
+  if (error) throw error;
+};
+
+export const fetchNoteComments = async (noteId: string): Promise<NoteComment[]> => {
+  const { data, error } = await supabase
+    .from('inbox_note_comments')
+    .select('id, body, created_at')
+    .eq('note_id', noteId)
+    .order('created_at');
+  if (error) throw error;
+  return data;
+};
+
+export const addNoteComment = async (noteId: string, body: string): Promise<NoteComment> => {
+  const { data, error } = await supabase
+    .from('inbox_note_comments')
+    .insert({ note_id: noteId, body })
     .select('id, body, created_at')
     .single();
   if (error) throw error;
