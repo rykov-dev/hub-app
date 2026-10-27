@@ -1,5 +1,6 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { addInboxNote, inboxNoteReward } from '../lib/api';
+import { inboxNoteReward } from '../lib/api';
+import { outbox } from '../lib/offline/outbox';
 
 const MAX_LENGTH = 10_000;
 
@@ -18,8 +19,6 @@ type Props = {
 export const InboxNoteDialog = ({ open, onClose, onSaved }: Props) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [body, setBody] = useState('');
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -31,20 +30,16 @@ export const InboxNoteDialog = ({ open, onClose, onSaved }: Props) => {
   const text = body.trim();
   const reward = inboxNoteReward(text);
 
-  const save = async () => {
-    if (!text || pending) return;
-    setPending(true);
-    setError(null);
-    try {
-      await addInboxNote(text);
-      setBody('');
-      onSaved(reward);
-      onClose();
-    } catch (e) {
-      setError(String((e as Error).message ?? e));
-    } finally {
-      setPending(false);
-    }
+  // Saved locally right away and synced in the background, so it works offline.
+  const save = () => {
+    if (!text) return;
+    outbox.enqueue({
+      kind: 'addNote',
+      note: { id: crypto.randomUUID(), body: text, tags: [], created_at: new Date().toISOString() },
+    });
+    setBody('');
+    onSaved(reward);
+    onClose();
   };
 
   const onSubmit = (e: FormEvent) => {
@@ -80,14 +75,13 @@ export const InboxNoteDialog = ({ open, onClose, onSaved }: Props) => {
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        {error && <p className="error">{error}</p>}
         <div className="sheet-actions">
           <span className="muted sheet-reward">+{reward} мон.</span>
           <button type="button" className="link" onClick={onClose}>
             Отмена
           </button>
-          <button type="submit" className="btn btn-primary" disabled={!text || pending}>
-            {pending ? 'Сохраняем…' : 'Сохранить'}
+          <button type="submit" className="btn btn-primary" disabled={!text}>
+            Сохранить
           </button>
         </div>
       </form>

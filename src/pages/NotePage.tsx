@@ -3,11 +3,16 @@ import { Loader } from '../components/Loader';
 import { NoteComments } from '../components/NoteComments';
 import { TagEditor } from '../components/TagEditor';
 import { useInboxNote } from '../hooks/useInboxNote';
+import { useAppContext } from '../layouts/AppLayout';
 import { formatDateTime } from '../lib/format';
 
 export const NotePage = () => {
   const { noteId = '' } = useParams();
-  const { note, comments, error, setTags, addComment } = useInboxNote(noteId);
+  const { profile } = useAppContext();
+  const { note, comments, pendingCommentIds, error, setTags, addComment } = useInboxNote(
+    profile.id,
+    noteId,
+  );
 
   if (note === undefined) return error ? <p className="error">{error}</p> : <Loader inline />;
 
@@ -26,7 +31,7 @@ export const NotePage = () => {
           </time>
           <TagEditor tags={note.tags} onChange={setTags} />
           {error && <p className="error">{error}</p>}
-          <NoteComments comments={comments} onAdd={addComment} />
+          <NoteComments comments={comments} pendingIds={pendingCommentIds} onAdd={addComment} />
         </>
       )}
     </article>

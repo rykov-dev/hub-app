@@ -4,27 +4,19 @@ import { formatDateTime } from '../lib/format';
 
 type Props = {
   comments: NoteComment[];
-  onAdd: (body: string) => Promise<void>;
+  /** Comments saved on this device but not yet on the server. */
+  pendingIds: Set<string>;
+  onAdd: (body: string) => void;
 };
 
-export const NoteComments = ({ comments, onAdd }: Props) => {
+export const NoteComments = ({ comments, pendingIds, onAdd }: Props) => {
   const [body, setBody] = useState('');
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const text = body.trim();
 
-  const submit = async () => {
-    if (!text || pending) return;
-    setPending(true);
-    setError(null);
-    try {
-      await onAdd(text);
-      setBody('');
-    } catch (e) {
-      setError(String((e as Error).message ?? e));
-    } finally {
-      setPending(false);
-    }
+  const submit = () => {
+    if (!text) return;
+    onAdd(text);
+    setBody('');
   };
 
   const onSubmit = (e: FormEvent) => {
@@ -47,9 +39,10 @@ export const NoteComments = ({ comments, onAdd }: Props) => {
           {comments.map((c) => (
             <li key={c.id}>
               <p className="note-body">{c.body}</p>
-              <time className="muted small" dateTime={c.created_at}>
-                {formatDateTime(c.created_at)}
-              </time>
+              <span className="muted small">
+                <time dateTime={c.created_at}>{formatDateTime(c.created_at)}</time>
+                {pendingIds.has(c.id) && ' · ждёт синхронизации'}
+              </span>
             </li>
           ))}
         </ul>
@@ -65,10 +58,9 @@ export const NoteComments = ({ comments, onAdd }: Props) => {
           onChange={(e) => setBody(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        {error && <p className="error">{error}</p>}
         <div className="sheet-actions">
-          <button type="submit" className="btn btn-primary" disabled={!text || pending}>
-            {pending ? 'Сохраняем…' : 'Комментировать'}
+          <button type="submit" className="btn btn-primary" disabled={!text}>
+            Комментировать
           </button>
         </div>
       </form>

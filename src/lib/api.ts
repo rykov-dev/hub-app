@@ -90,14 +90,13 @@ export const fetchInboxNotes = async (limit = 100): Promise<InboxNote[]> => {
 /** Coins for an inbox note: 1 per character, as the server counts them (trimmed, code points). */
 export const inboxNoteReward = (body: string) => [...body.trim()].length;
 
-export const addInboxNote = async (body: string): Promise<InboxNote> => {
-  const { data, error } = await supabase
-    .from('inbox_notes')
-    .insert({ body })
-    .select(NOTE_COLUMNS)
-    .single();
+/**
+ * Ids and timestamps come from the client so a note created offline keeps
+ * them, and a retried insert hits the primary key instead of duplicating.
+ */
+export const insertInboxNote = async (note: InboxNote): Promise<void> => {
+  const { error } = await supabase.from('inbox_notes').insert(note);
   if (error) throw error;
-  return data;
 };
 
 export const fetchInboxNote = async (id: string): Promise<InboxNote | null> => {
@@ -125,12 +124,7 @@ export const fetchNoteComments = async (noteId: string): Promise<NoteComment[]> 
   return data;
 };
 
-export const addNoteComment = async (noteId: string, body: string): Promise<NoteComment> => {
-  const { data, error } = await supabase
-    .from('inbox_note_comments')
-    .insert({ note_id: noteId, body })
-    .select('id, body, created_at')
-    .single();
+export const insertNoteComment = async (noteId: string, comment: NoteComment): Promise<void> => {
+  const { error } = await supabase.from('inbox_note_comments').insert({ ...comment, note_id: noteId });
   if (error) throw error;
-  return data;
 };

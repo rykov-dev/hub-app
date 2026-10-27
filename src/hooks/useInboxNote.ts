@@ -1,58 +1,80 @@
-import { useCallback, useEffect, useState } from 'react';
-import {
-  type InboxNote,
-  type NoteComment,
-  addNoteComment,
-  fetchInboxNote,
-  fetchNoteComments,
-  updateNoteTags,
-} from '../lib/api';
+import { useCallback, useMemo } from 'react';
+import { type InboxNote, type NoteComment, fetchInboxNote, fetchNoteComments } from '../lib/api';
+import { applyToComments, applyToNote } from '../lib/offline/apply';
+import { type OutboxItem, outbox } from '../lib/offline/outbox';
+import { readStored } from '../lib/offline/storage';
+import { useCachedQuery } from './useCachedQuery';
+import { useOutbox, useOutboxApplied } from './useOutbox';
 
-/** A single inbox note with its comments, plus actions on them. */
-export const useInboxNote = (id: string) => {
-  // undefined while loading, null when the note doesn't exist.
-  const [note, setNote] = useState<InboxNote | null | undefined>(undefined);
-  const [comments, setComments] = useState<NoteComment[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    setNote(undefined);
-    Promise.all([fetchInboxNote(id), fetchNoteComments(id)])
-      .then(([n, c]) => {
-        if (cancelled) return;
-        setNote(n);
-        setComments(c);
-      })
-      .catch((e) => !cancelled && setError(String(e.message ?? e)));
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  const setTags = useCallback(
-    async (tags: string[]) => {
-      // Optimistic: show the change right away, roll back if saving fails.
-      const previous = note?.tags ?? [];
-      setNote((n) => n && { ...n, tags });
-      try {
-        await updateNoteTags(id, tags);
-        setError(null);
-      } catch (e) {
-        setNote((n) => n && { ...n, tags: previous });
-        setError(String((e as Error).message ?? e));
-      }
+/** A single inbox note with its comments, plus actions on them; works offline. */
+export const useInboxNote = (userId: string, id: string) => {
+  const noteQuery = useCachedQuery<InboxNote | null>(
+    `${userId}:note:${id}`,
+    useCallback(() => fetchInboxNote(id), [id]),
+    {
+      // Not opened before: the cached list may still have it.
+      fallback: async () =>
+        (await readStored<InboxNote[]>(`${userId}:notes`))?.find((n) => n.id === id),
     },
-    [id, note?.tags],
+  );
+  const commentsQuery = useCachedQuery<NoteComment[]>(
+    `${userId}:comments:${id}`,
+    useCallback(() => fetchNoteComments(id), [id]),
+  );
+  const { items } = useOutbox();
+
+  const setNoteData = noteQuery.setData;
+  const setCommentsData = commentsQuery.setData;
+  useOutboxApplied(
+    useCallback(
+      (item: OutboxItem) => {
+        setNoteData((n) => (n === undefined ? n : applyToNote(n, id, item)));
+        setCommentsData((c) => c && applyToComments(c, id, item));
+      },
+      [id, setNoteData, setCommentsData],
+    ),
   );
 
-  const addComment = useCallback(
-    async (body: string) => {
-      const comment = await addNoteComment(id, body);
-      setComments((c) => [...c, comment]);
-    },
+  // undefined while loading, null when the note doesn't exist.
+  const note = useMemo(() => {
+    if (noteQuery.data === undefined && noteQuery.loading) return undefined;
+    return items.reduce((n, item) => applyToNote(n, id, item), noteQuery.data ?? null);
+  }, [noteQuery.data, noteQuery.loading, items, id]);
+
+  const comments = useMemo(
+    () => items.reduce((c, item) => applyToComments(c, id, item), commentsQuery.data ?? []),
+    [commentsQuery.data, items, id],
+  );
+
+  const pendingCommentIds = useMemo(
+    () =>
+      new Set(
+        items.flatMap((i) => (i.kind === 'addComment' && i.noteId === id ? [i.comment.id] : [])),
+      ),
+    [items, id],
+  );
+
+  const setTags = useCallback(
+    (tags: string[]) => outbox.enqueue({ kind: 'setTags', noteId: id, tags }),
     [id],
   );
 
-  return { note, comments, error, setTags, addComment };
+  const addComment = useCallback(
+    (body: string) =>
+      outbox.enqueue({
+        kind: 'addComment',
+        noteId: id,
+        comment: { id: crypto.randomUUID(), body, created_at: new Date().toISOString() },
+      }),
+    [id],
+  );
+
+  return {
+    note,
+    comments,
+    pendingCommentIds,
+    error: noteQuery.error ?? commentsQuery.error,
+    setTags,
+    addComment,
+  };
 };

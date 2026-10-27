@@ -10,6 +10,9 @@ import {
   fetchTransactions,
   sendHeartbeat,
 } from '../lib/api';
+import { isNetworkError } from '../lib/offline/network';
+import { useCachedQuery } from './useCachedQuery';
+import { useOnline } from './useOnline';
 
 const HEARTBEAT_INTERVAL_MS = 60_000;
 
@@ -28,40 +31,56 @@ const claimDailyOnce = (userId: string) => {
   return claim;
 };
 
+const fetchRecentTransactions = () => fetchTransactions();
+
 /**
- * Loads the user's coins, claims the daily visit reward on mount and sends
- * heartbeats while the tab is visible until today's time reward is earned.
+ * Loads the user's coins, claims the daily visit reward and sends heartbeats
+ * while the tab is visible until today's time reward is earned.
+ *
+ * Coins and history are kept for offline use. Rewards need the server, so
+ * offline they simply wait: the daily claim is retried when the connection
+ * comes back, and time offline doesn't count towards the 15 minutes.
  */
 export const useRewards = (userId: string) => {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [transactions, setTransactions] = useState<CoinTransaction[]>([]);
+  const online = useOnline();
+  const profileQuery = useCachedQuery<Profile>(`${userId}:profile`, fetchProfile);
+  const transactionsQuery = useCachedQuery<CoinTransaction[]>(
+    `${userId}:transactions`,
+    fetchRecentTransactions,
+  );
   const [dailyClaim, setDailyClaim] = useState<DailyClaimResult | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const refetchProfile = profileQuery.refetch;
+  const refetchTransactions = transactionsQuery.refetch;
   const refresh = useCallback(async () => {
-    const [p, t] = await Promise.all([fetchProfile(), fetchTransactions()]);
-    setProfile(p);
-    setTransactions(t);
-  }, []);
+    await Promise.all([refetchProfile(), refetchTransactions()]);
+  }, [refetchProfile, refetchTransactions]);
 
   useEffect(() => {
+    if (!online) return;
     let cancelled = false;
     claimDailyOnce(userId)
       .then((result) => {
         if (!cancelled) setDailyClaim(result);
         return refresh();
       })
-      .catch((e) => !cancelled && setError(String(e.message ?? e)));
+      .catch((e) => !cancelled && !isNetworkError(e) && setError(String(e.message ?? e)));
     return () => {
       cancelled = true;
     };
-  }, [userId, refresh]);
+  }, [userId, online, refresh]);
+
+  // Without a connection the server session lapses, so drop the stale timer.
+  useEffect(() => {
+    if (!online) setActivity(null);
+  }, [online]);
 
   const rewardedToday = activity?.rewarded_today ?? false;
 
   useEffect(() => {
-    if (rewardedToday) return;
+    if (rewardedToday || !online) return;
 
     let timer: ReturnType<typeof setTimeout> | undefined;
     // Bumped on every stop so responses from a previous session are ignored.
@@ -87,7 +106,7 @@ export const useRewards = (userId: string) => {
         delay = Math.min(delay, Math.max(remainingMs + 1000, 1000));
       } catch (e) {
         if (gen !== generation) return;
-        setError(String((e as Error).message ?? e));
+        if (!isNetworkError(e)) setError(String((e as Error).message ?? e));
       }
       timer = setTimeout(() => beat(gen), delay);
     };
@@ -117,7 +136,16 @@ export const useRewards = (userId: string) => {
       stop();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [userId, rewardedToday, refresh]);
+  }, [userId, rewardedToday, online, refresh]);
 
-  return { profile, transactions, dailyClaim, activity, error, refresh };
+  return {
+    profile: profileQuery.data ?? null,
+    /** True until the cached or fetched profile is known. */
+    profileLoading: profileQuery.loading && profileQuery.data === undefined,
+    transactions: transactionsQuery.data ?? [],
+    dailyClaim,
+    activity,
+    error: error ?? profileQuery.error ?? transactionsQuery.error,
+    refresh,
+  };
 };

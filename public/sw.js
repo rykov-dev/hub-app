@@ -2,11 +2,29 @@
 // Paths are relative to the worker's scope, which is the app's base path.
 // Supabase requests are cross-origin and always go to the network.
 
-const CACHE = 'monetki-v1';
-const SHELL = ['./', 'manifest.webmanifest', 'icon.svg', 'icons/icon-192.png'];
+const CACHE = 'monetki-v2';
+const EXTRA = ['icons/icon-192.png', 'icons/icon-512.png'];
+
+// The page registers the worker after it has loaded, so the first visit's
+// scripts and styles never pass through it. Precache the current shell and
+// everything it references, so the app opens offline right after one visit.
+const precacheShell = async () => {
+  const cache = await caches.open(CACHE);
+  const root = new URL('./', self.registration.scope);
+  const response = await fetch(root, { cache: 'no-cache' });
+  if (!response.ok) throw new Error(`shell: ${response.status}`);
+  const html = await response.clone().text();
+  await cache.put(root, response);
+  const assets = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((m) => new URL(m[1], root))
+    .filter((url) => url.origin === self.location.origin)
+    .map((url) => url.href);
+  const extra = EXTRA.map((path) => new URL(path, root).href);
+  await cache.addAll([...new Set([...assets, ...extra])]);
+};
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
+  event.waitUntil(precacheShell());
   self.skipWaiting();
 });
 

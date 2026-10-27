@@ -4,10 +4,14 @@ import { useInboxNotes } from '../hooks/useInboxNotes';
 import { useAppContext } from '../layouts/AppLayout';
 
 export const InboxPage = () => {
-  const { notesVersion } = useAppContext();
-  const { notes, error } = useInboxNotes(notesVersion);
+  const { profile } = useAppContext();
+  const { notes, pendingIds, error } = useInboxNotes(profile.id);
 
-  if (error) return <p className="error">{error}</p>;
-  if (!notes) return <Loader inline />;
-  return <InboxNoteList className="area-inbox" notes={notes} />;
+  if (!notes) return error ? <p className="error">{error}</p> : <Loader inline />;
+  return (
+    <>
+      {error && <p className="error">{error}</p>}
+      <InboxNoteList className="area-inbox" notes={notes} pendingIds={pendingIds} />
+    </>
+  );
 };

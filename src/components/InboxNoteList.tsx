@@ -5,10 +5,12 @@ import { TagList } from './TagList';
 
 type Props = {
   notes: InboxNote[];
+  /** Notes saved on this device but not yet on the server. */
+  pendingIds: Set<string>;
   className?: string;
 };
 
-export const InboxNoteList = ({ notes, className = '' }: Props) => (
+export const InboxNoteList = ({ notes, pendingIds, className = '' }: Props) => (
   <section className={`card ${className}`}>
     <h2>Inbox</h2>
     {notes.length === 0 ? (
@@ -20,9 +22,10 @@ export const InboxNoteList = ({ notes, className = '' }: Props) => (
             <Link to={`/inbox/${note.id}`} className="note-link">
               <p className="note-body note-preview">{note.body}</p>
               <TagList tags={note.tags} />
-              <time className="muted small" dateTime={note.created_at}>
-                {formatDateTime(note.created_at)}
-              </time>
+              <span className="muted small">
+                <time dateTime={note.created_at}>{formatDateTime(note.created_at)}</time>
+                {pendingIds.has(note.id) && ' · ждёт синхронизации'}
+              </span>
             </Link>
           </li>
         ))}
