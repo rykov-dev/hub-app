@@ -293,3 +293,107 @@ h2 { margin: 0 0 8px; font-size: 1rem; }
   padding: 8px 0;
   border-top: 1px solid var(--border);
 }
+
+/* Inbox: docked to the bottom edge on phones, a floating corner button from tablets up. */
+.inbox-button {
+  --inbox-height: 56px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* The fill runs under the home indicator; the label stays above it. */
+  height: calc(var(--inbox-height) + env(safe-area-inset-bottom));
+  padding: 0 0 env(safe-area-inset-bottom);
+  font-weight: 600;
+  border: none;
+  border-radius: 0;
+}
+
+/* Keeps the last card clear of the fixed Inbox button. */
+.layout-with-inbox {
+  padding-bottom: calc(var(--margin) + 56px + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 600px) {
+  .inbox-button {
+    left: auto;
+    right: var(--margin);
+    bottom: var(--margin);
+    height: 52px;
+    padding: 0 22px;
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  }
+  .layout-with-inbox {
+    padding-bottom: calc(var(--margin) + 52px + 16px);
+  }
+}
+
+.sheet {
+  width: 100%;
+  max-width: 100%;
+  margin: auto 0 0;
+  padding: 0;
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+}
+.sheet::backdrop { background: rgb(0 0 0 / 0.45); }
+
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px var(--margin) calc(24px + env(safe-area-inset-bottom));
+}
+
+.sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+}
+.sheet-reward {
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 600px) {
+  .sheet {
+    width: min(560px, 100% - 2 * var(--margin));
+    margin: auto;
+    border-bottom: 1px solid var(--border);
+    border-radius: 16px;
+  }
+  .sheet-body { padding: 24px; }
+}
+
+.textarea {
+  min-height: 140px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(56px + 12px + env(safe-area-inset-bottom));
+  z-index: 11;
+  margin: 0;
+  padding: 10px 16px;
+  color: var(--bg);
+  background: var(--text);
+  border-radius: 10px;
+  transform: translateX(-50%);
+}
+
+@media (min-width: 600px) {
+  .snackbar { bottom: var(--margin); }
+}

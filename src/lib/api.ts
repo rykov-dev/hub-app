@@ -13,8 +13,14 @@ export type Profile = {
 export type CoinTransaction = {
   id: number;
   amount: number;
-  reason: 'daily_visit' | 'streak_bonus' | 'time_on_site';
+  reason: 'daily_visit' | 'streak_bonus' | 'time_on_site' | 'inbox_note';
   day: string;
+  created_at: string;
+};
+
+export type InboxNote = {
+  id: string;
+  body: string;
   created_at: string;
 };
 
@@ -58,6 +64,19 @@ export const fetchTransactions = async (limit = 10): Promise<CoinTransaction[]> 
     .select('id, amount, reason, day, created_at')
     .order('created_at', { ascending: false })
     .limit(limit);
+  if (error) throw error;
+  return data;
+};
+
+/** Coins for an inbox note: 1 per character, as the server counts them (trimmed, code points). */
+export const inboxNoteReward = (body: string) => [...body.trim()].length;
+
+export const addInboxNote = async (body: string): Promise<InboxNote> => {
+  const { data, error } = await supabase
+    .from('inbox_notes')
+    .insert({ body })
+    .select('id, body, created_at')
+    .single();
   if (error) throw error;
   return data;
 };

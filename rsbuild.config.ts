@@ -19,6 +19,8 @@ export default defineConfig({
       { tag: 'link', attrs: { rel: 'apple-touch-icon', href: 'icons/apple-touch-icon.png' } },
     ],
     meta: {
+      // viewport-fit=cover exposes safe-area insets for the fixed Inbox button.
+      viewport: 'width=device-width, initial-scale=1.0, viewport-fit=cover',
       description: 'Заходи каждый день и собирай монетки.',
       // Matches --bg of each theme in src/App.css.
       'theme-color-light': {

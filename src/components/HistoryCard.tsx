@@ -4,6 +4,7 @@ const reasonLabels: Record<CoinTransaction['reason'], string> = {
   daily_visit: 'Ежедневный визит',
   streak_bonus: 'Бонус за серию',
   time_on_site: '15 минут на сайте',
+  inbox_note: 'Заметка в Inbox',
 };
 
 type Props = {

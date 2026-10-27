@@ -119,5 +119,5 @@ export const useRewards = (userId: string) => {
     };
   }, [userId, rewardedToday, refresh]);
 
-  return { profile, transactions, dailyClaim, activity, error };
+  return { profile, transactions, dailyClaim, activity, error, refresh };
 };
