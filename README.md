@@ -1,5 +1,7 @@
 # Монетки
 
+[Суть приложения и связь с hub](VISION.md).
+
 React + Rsbuild фронтенд, Supabase (Postgres, Auth, Edge Functions) вместо бэкенда.
 Вход через Google, GitHub или по email и паролю (Supabase Auth), без подтверждения почты
 и без отправки писем.
