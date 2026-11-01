@@ -11,4 +11,6 @@ declare module '*.svg?react' {
 interface ImportMetaEnv {
   readonly PUBLIC_SUPABASE_URL: string;
   readonly PUBLIC_SUPABASE_PUBLISHABLE_KEY: string;
+  /** URL of the game world (project-25) shown in an iframe on the World page. */
+  readonly PUBLIC_WORLD_URL?: string;
 }

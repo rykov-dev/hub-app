@@ -13,7 +13,9 @@ export type Profile = {
 export type CoinTransaction = {
   id: number;
   amount: number;
-  reason: 'daily_visit' | 'streak_bonus' | 'time_on_site' | 'inbox_note';
+  reason: 'daily_visit' | 'streak_bonus' | 'time_on_site' | 'inbox_note' | 'spend';
+  /** What coins were spent on. */
+  description: string | null;
   day: string;
   created_at: string;
 };
@@ -32,6 +34,20 @@ export type NoteComment = {
 };
 
 const NOTE_COLUMNS = 'id, body, tags, created_at';
+
+export type Chat = {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type SavedChatMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+};
 
 export type DailyClaimResult = {
   claimed: boolean;
@@ -70,7 +86,7 @@ export const fetchProfile = async (): Promise<Profile> => {
 export const fetchTransactions = async (limit = 10): Promise<CoinTransaction[]> => {
   const { data, error } = await supabase
     .from('coin_transactions')
-    .select('id, amount, reason, day, created_at')
+    .select('id, amount, reason, description, day, created_at')
     .order('created_at', { ascending: false })
     .limit(limit);
   if (error) throw error;
@@ -127,4 +143,53 @@ export const fetchNoteComments = async (noteId: string): Promise<NoteComment[]> 
 export const insertNoteComment = async (noteId: string, comment: NoteComment): Promise<void> => {
   const { error } = await supabase.from('inbox_note_comments').insert({ ...comment, note_id: noteId });
   if (error) throw error;
+};
+
+export const fetchChats = async (limit = 100): Promise<Chat[]> => {
+  const { data, error } = await supabase
+    .from('chats')
+    .select('id, title, created_at, updated_at')
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data;
+};
+
+export const fetchChatMessages = async (chatId: string): Promise<SavedChatMessage[]> => {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('id, role, content, created_at')
+    .eq('chat_id', chatId)
+    .order('created_at');
+  if (error) throw error;
+  return data;
+};
+
+/** Like notes, chats and messages get their ids and timestamps on the client. */
+export const insertChat = async (chat: Chat): Promise<void> => {
+  const { error } = await supabase.from('chats').insert(chat);
+  if (error) throw error;
+};
+
+export const insertChatMessage = async (chatId: string, message: SavedChatMessage): Promise<void> => {
+  const { error } = await supabase.from('chat_messages').insert({ ...message, chat_id: chatId });
+  if (error) throw error;
+};
+
+/**
+ * Spends coins on the server; a retry with the same request id is not
+ * charged twice. Returns the new balance.
+ */
+export const spendCoins = async (
+  amount: number,
+  description: string,
+  requestId: string,
+): Promise<number> => {
+  const { data, error } = await supabase.rpc('spend_coins', {
+    p_amount: amount,
+    p_description: description,
+    p_request_id: requestId,
+  });
+  if (error) throw error;
+  return (data as { coins: number }).coins;
 };

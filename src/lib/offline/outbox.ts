@@ -1,6 +1,10 @@
 import {
+  type Chat,
   type InboxNote,
   type NoteComment,
+  type SavedChatMessage,
+  insertChat,
+  insertChatMessage,
   insertInboxNote,
   insertNoteComment,
   updateNoteTags,
@@ -16,7 +20,10 @@ import { deleteStored, readStoredByPrefix, writeStored } from './storage';
 export type OutboxChange =
   | { kind: 'addNote'; note: InboxNote }
   | { kind: 'setTags'; noteId: string; tags: string[] }
-  | { kind: 'addComment'; noteId: string; comment: NoteComment };
+  | { kind: 'addComment'; noteId: string; comment: NoteComment }
+  // Queued before its messages, so the chat reaches the server first.
+  | { kind: 'addChat'; chat: Chat }
+  | { kind: 'addChatMessage'; chatId: string; message: SavedChatMessage };
 
 export type OutboxItem = OutboxChange & {
   id: string;
@@ -81,11 +88,21 @@ const send = (item: OutboxItem): Promise<void> => {
       return updateNoteTags(item.noteId, item.tags);
     case 'addComment':
       return ignoreDuplicate(insertNoteComment(item.noteId, item.comment));
+    case 'addChat':
+      return ignoreDuplicate(insertChat(item.chat));
+    case 'addChatMessage':
+      return ignoreDuplicate(insertChatMessage(item.chatId, item.message));
   }
 };
 
 const describe = (item: OutboxItem, e: unknown) => {
-  const what = { addNote: 'заметку', setTags: 'теги', addComment: 'комментарий' }[item.kind];
+  const what = {
+    addNote: 'заметку',
+    setTags: 'теги',
+    addComment: 'комментарий',
+    addChat: 'чат',
+    addChatMessage: 'сообщение чата',
+  }[item.kind];
   return `Не удалось сохранить ${what}: ${(e as Error).message ?? e}`;
 };
 

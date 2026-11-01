@@ -5,6 +5,7 @@ const reasonLabels: Record<CoinTransaction['reason'], string> = {
   streak_bonus: 'Бонус за серию',
   time_on_site: '15 минут на сайте',
   inbox_note: 'Заметка в Inbox',
+  spend: 'Покупка в мире',
 };
 
 type Props = {
@@ -18,9 +19,12 @@ export const HistoryCard = ({ transactions, className = '' }: Props) => (
     <ul className="history">
       {transactions.map((t) => (
         <li key={t.id}>
-          <span>{reasonLabels[t.reason]}</span>
+          <span>
+            {reasonLabels[t.reason]}
+            {t.description && `: ${t.description}`}
+          </span>
           <span className="muted">{t.day}</span>
-          <strong>+{t.amount}</strong>
+          <strong>{t.amount > 0 ? `+${t.amount}` : `−${-t.amount}`}</strong>
         </li>
       ))}
     </ul>

@@ -1,5 +1,6 @@
 import { BalanceCard } from '../components/BalanceCard';
 import { HistoryCard } from '../components/HistoryCard';
+import { SectionTiles } from '../components/SectionTiles';
 import { SessionTimer } from '../components/SessionTimer';
 import { StreakCard } from '../components/StreakCard';
 import { useAppContext } from '../layouts/AppLayout';
@@ -9,6 +10,7 @@ export const DashboardPage = () => {
 
   return (
     <>
+      <SectionTiles className="area-tiles" />
       <BalanceCard className="area-balance" coins={profile.coins} dailyClaim={dailyClaim} />
       <StreakCard
         className="area-streak"

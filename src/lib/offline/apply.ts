@@ -1,4 +1,4 @@
-import type { InboxNote, NoteComment } from '../api';
+import type { Chat, InboxNote, NoteComment, SavedChatMessage } from '../api';
 import type { OutboxItem } from './outbox';
 
 // Applying queued changes to server data gives what the user should see: used
@@ -31,3 +31,32 @@ export const applyToComments = (
   !comments.some((c) => c.id === item.comment.id)
     ? [...comments, item.comment]
     : comments;
+
+export const applyToChats = (chats: Chat[], item: OutboxItem): Chat[] => {
+  switch (item.kind) {
+    case 'addChat':
+      return chats.some((c) => c.id === item.chat.id) ? chats : [item.chat, ...chats];
+    case 'addChatMessage': {
+      // A new message lifts its chat to the top, as the server's updated_at does.
+      const chat = chats.find((c) => c.id === item.chatId);
+      if (!chat || chat.updated_at >= item.message.created_at) return chats;
+      return [
+        { ...chat, updated_at: item.message.created_at },
+        ...chats.filter((c) => c !== chat),
+      ];
+    }
+    default:
+      return chats;
+  }
+};
+
+export const applyToChatMessages = (
+  messages: SavedChatMessage[],
+  chatId: string,
+  item: OutboxItem,
+): SavedChatMessage[] =>
+  item.kind === 'addChatMessage' &&
+  item.chatId === chatId &&
+  !messages.some((m) => m.id === item.message.id)
+    ? [...messages, item.message]
+    : messages;

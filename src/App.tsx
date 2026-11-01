@@ -3,8 +3,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { Loader } from './components/Loader';
 import { useSession } from './hooks/useSession';
 import { AppLayout } from './layouts/AppLayout';
+import { ChatPage } from './pages/ChatPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { GamePage } from './pages/GamePage';
 import { InboxPage } from './pages/InboxPage';
+import { KnowledgePage } from './pages/KnowledgePage';
+import { LinksPage } from './pages/LinksPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotePage } from './pages/NotePage';
 
@@ -24,8 +28,13 @@ const App = () => {
           element={session ? <AppLayout user={session.user} /> : <Navigate to="/login" replace />}
         >
           <Route index element={<DashboardPage />} />
+          <Route path="knowledge" element={<KnowledgePage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="inbox/:noteId" element={<NotePage />} />
+          <Route path="chat/:chatId?" element={<ChatPage />} />
+          <Route path="game" element={<GamePage />} />
+          <Route path="world" element={<Navigate to="/game" replace />} />
+          <Route path="links" element={<LinksPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

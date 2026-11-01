@@ -9,7 +9,16 @@ const themeScript = `try{var t=localStorage.getItem('theme');if(t==='light'||t==
 export default defineConfig({
   plugins: [pluginReact()],
   // GitHub Pages serves the app from /<repo>/; set by the deploy workflow.
-  server: { base: process.env.BASE_PATH ?? '/' },
+  server: {
+    base: process.env.BASE_PATH ?? '/',
+    // Dev only: the chat's local model (scripts/bonsai.sh), same-origin so no CORS.
+    proxy: {
+      '/llm': {
+        target: process.env.BONSAI_URL ?? 'http://127.0.0.1:8081',
+        pathRewrite: { '^/llm': '' },
+      },
+    },
+  },
   html: {
     title: 'Монетки',
     tags: [
