@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Only the release branch is deployed; main is for development.
 on:
   push:
-    branches: [main]
+    branches: [release/v1]
   workflow_dispatch:
 
 permissions:
@@ -16,6 +17,8 @@ concurrency:
 
 jobs:
   build:
+    # A manual run started from another branch is skipped, not deployed.
+    if: github.ref == 'refs/heads/release/v1'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

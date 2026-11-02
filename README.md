@@ -81,5 +81,5 @@ Google и GitHub включаются в Dashboard → Authentication → Sign I
 `https://vfnpkkzaxsraakeacchg.supabase.co/auth/v1/callback`. Адреса, куда можно вернуться после входа,
 заданы в `additional_redirect_urls` в `supabase/config.toml`.
 
-Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` при каждом push в `main`
-(Settings → Pages → Source: GitHub Actions). Сайт: https://rykov-dev.github.io/hub-app/
+Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` только из ветки
+`release/v1` (Settings → Pages → Source: GitHub Actions). `main` — ветка разработки, она не деплоится. Сайт: https://rykov-dev.github.io/hub-app/
