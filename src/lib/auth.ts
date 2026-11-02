@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
+import { outboxPrefix } from './offline/outbox';
 import { clearStored } from './offline/storage';
 import { supabase } from './supabase';
 
@@ -19,10 +20,11 @@ export const readStoredSession = (): Session | null => {
 };
 
 /**
- * Signs out and removes the user's offline data from this device, except
- * changes that haven't reached the server yet: they sync on the next sign-in.
+ * Signs out and removes the user's data from this device, the vault key
+ * included, except changes that haven't reached the server yet (they are
+ * encrypted): they sync on the next sign-in, once the key is loaded again.
  */
 export const signOut = async (userId: string) => {
   await supabase.auth.signOut();
-  await clearStored(`${userId}:`, `${userId}:outbox:`);
+  await clearStored(`${userId}:`, [outboxPrefix(userId), `${userId}:outbox:`]);
 };

@@ -1,10 +1,10 @@
 import { Link } from 'react-router';
-import type { InboxNote } from '../lib/api';
+import type { Note } from '../lib/vault/model';
 import { formatDateTime } from '../lib/format';
 import { TagList } from './TagList';
 
 type Props = {
-  notes: InboxNote[];
+  notes: Note[];
   /** Notes saved on this device but not yet on the server. */
   pendingIds: Set<string>;
   className?: string;

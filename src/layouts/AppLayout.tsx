@@ -1,57 +1,73 @@
 import type { User } from '@supabase/supabase-js';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useOutletContext } from 'react-router';
 import { InboxButton } from '../components/InboxButton';
 import { InboxNoteDialog } from '../components/InboxNoteDialog';
 import { Loader } from '../components/Loader';
 import { Topbar } from '../components/Topbar';
+import { VaultSetup } from '../components/VaultSetup';
+import { VaultUnlock } from '../components/VaultUnlock';
 import { useOnline } from '../hooks/useOnline';
-import { useOutbox, useOutboxApplied } from '../hooks/useOutbox';
+import { useOutbox } from '../hooks/useOutbox';
 import { useRewards } from '../hooks/useRewards';
+import { useVault } from '../hooks/useVault';
+import { useVaultKey } from '../hooks/useVaultKey';
 import type { Profile } from '../lib/api';
-import { type OutboxItem, outbox } from '../lib/offline/outbox';
+import { isNetworkError } from '../lib/offline/network';
+import { outbox } from '../lib/offline/outbox';
+import type { VaultKey } from '../lib/vault/crypto';
+import { migrateLegacy } from '../lib/vault/legacy';
+import { vault } from '../lib/vault/vault';
 
 type RewardsState = ReturnType<typeof useRewards>;
 
-export type AppContext = Omit<RewardsState, 'profile'> & { profile: Profile };
+export type AppContext = Omit<RewardsState, 'profile'> & {
+  profile: Profile;
+  vaultKey: VaultKey;
+  account: string;
+};
 
 /** Typed access to the layout's context from pages. */
 export const useAppContext = () => useOutletContext<AppContext>();
 
 /**
- * Shell for signed-in pages: top bar with tabs, the Inbox button and dialog.
- * Rewards live here rather than in a page so that switching tabs doesn't stop
- * heartbeats and break the continuous time-on-site session.
+ * Shell for signed-in pages: top bar, the Inbox button and dialog. Pages open
+ * only with the vault unlocked: the first start creates the key, a new device
+ * asks for the key file.
  */
 export const AppLayout = ({ user }: { user: User }) => {
   const rewards = useRewards(user.id);
   const online = useOnline();
   const { items, error: syncError } = useOutbox();
+  const { ready: vaultReady, error: vaultError, unreadable } = useVault();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [migrationError, setMigrationError] = useState<string | null>(null);
+
+  const { profile, profileLoading, error, refresh } = rewards;
+  const fingerprint = profile?.vault_key_fingerprint ?? null;
+  const { state: keyState, accept } = useVaultKey(user.id, fingerprint);
+  const vaultKey = keyState.status === 'ready' ? keyState.vaultKey : null;
 
   useEffect(() => {
-    outbox.load(user.id);
-    return () => outbox.unload();
-  }, [user.id]);
+    if (!vaultKey) return;
+    vault.open(user.id, vaultKey.key);
+    return () => vault.close();
+  }, [user.id, vaultKey]);
+
+  // Notes from before encryption move into the vault once it's open and online.
+  useEffect(() => {
+    if (!vaultReady || !online) return;
+    migrateLegacy(user.id).catch(
+      (e) => !isNetworkError(e) && setMigrationError(`Не удалось перенести старые заметки: ${e.message ?? e}`),
+    );
+  }, [user.id, vaultReady, online]);
 
   useEffect(() => {
     if (!notice) return;
     const id = setTimeout(() => setNotice(null), 3000);
     return () => clearTimeout(id);
   }, [notice]);
-
-  const { profile, profileLoading, error, refresh } = rewards;
-
-  // Coins for a note are granted by the server when the note reaches it.
-  useOutboxApplied(
-    useCallback(
-      (item: OutboxItem) => {
-        if (item.kind === 'addNote') refresh();
-      },
-      [refresh],
-    ),
-  );
 
   if (!profile) {
     if (profileLoading) return <Loader />;
@@ -64,11 +80,35 @@ export const AppLayout = ({ user }: { user: User }) => {
     );
   }
 
-  const context: AppContext = { ...rewards, profile };
+  const account = user.email ?? profile.display_name ?? user.id;
+  const topbar = <Topbar userId={user.id} userName={profile.display_name ?? user.email ?? ''} />;
+
+  if (!vaultKey) {
+    const onReady = async (key: VaultKey) => {
+      await accept(key);
+      refresh();
+    };
+    return (
+      <div className="layout">
+        {topbar}
+        {keyState.status === 'loading' ? (
+          <Loader inline />
+        ) : fingerprint ? (
+          <VaultUnlock fingerprint={fingerprint} onReady={onReady} />
+        ) : (
+          <VaultSetup account={account} onReady={onReady} />
+        )}
+      </div>
+    );
+  }
+
+  if (!vaultReady) return <Loader />;
+
+  const context: AppContext = { ...rewards, profile, vaultKey, account };
 
   return (
     <div className="layout layout-with-inbox">
-      <Topbar userId={user.id} userName={profile.display_name ?? user.email ?? ''} />
+      {topbar}
       {(!online || items.length > 0) && (
         <p className="sync-status muted small" role="status">
           {online
@@ -84,6 +124,10 @@ export const AppLayout = ({ user }: { user: User }) => {
           </button>
         </p>
       )}
+      {(vaultError ?? migrationError) && <p className="error">{vaultError ?? migrationError}</p>}
+      {unreadable > 0 && (
+        <p className="error">Не удалось расшифровать объектов: {unreadable}. Возможно, они повреждены.</p>
+      )}
       <Outlet context={context} />
       {error && <p className="error">{error}</p>}
 
@@ -91,13 +135,7 @@ export const AppLayout = ({ user }: { user: User }) => {
       <InboxNoteDialog
         open={inboxOpen}
         onClose={() => setInboxOpen(false)}
-        onSaved={(reward) =>
-          setNotice(
-            online
-              ? `Сохранено в Inbox · +${reward} мон.`
-              : `Сохранено офлайн · +${reward} мон. после синхронизации`,
-          )
-        }
+        onSaved={() => setNotice(online ? 'Сохранено в Inbox' : 'Сохранено на устройстве, отправится при появлении сети')}
       />
       {notice && (
         <p className="snackbar" role="status">

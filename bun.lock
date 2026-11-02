@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "coins-app",
+      "name": "deity",
       "dependencies": {
         "@supabase/supabase-js": "^2.118.0",
         "idb-keyval": "^6.3.0",

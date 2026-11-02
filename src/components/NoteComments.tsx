@@ -1,5 +1,5 @@
 import { type FormEvent, type KeyboardEvent, useState } from 'react';
-import type { NoteComment } from '../lib/api';
+import type { NoteComment } from '../lib/vault/model';
 import { formatDateTime } from '../lib/format';
 
 type Props = {

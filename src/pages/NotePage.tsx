@@ -1,20 +1,22 @@
-import { Link, useParams } from 'react-router';
-import { Loader } from '../components/Loader';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 import { NoteComments } from '../components/NoteComments';
 import { TagEditor } from '../components/TagEditor';
-import { useInboxNote } from '../hooks/useInboxNote';
-import { useAppContext } from '../layouts/AppLayout';
+import { useNote } from '../hooks/useNotes';
 import { formatDateTime } from '../lib/format';
 
 export const NotePage = () => {
   const { noteId = '' } = useParams();
-  const { profile } = useAppContext();
-  const { note, comments, pendingCommentIds, error, setTags, addComment } = useInboxNote(
-    profile.id,
-    noteId,
-  );
+  const navigate = useNavigate();
+  const { note, comments, pendingCommentIds, setTags, addComment, remove } = useNote(noteId);
+  // Deleting takes a second click, so a slip doesn't lose a note.
+  const [confirming, setConfirming] = useState(false);
 
-  if (note === undefined) return error ? <p className="error">{error}</p> : <Loader inline />;
+  const onDelete = () => {
+    if (!confirming) return setConfirming(true);
+    remove();
+    navigate('/inbox', { replace: true });
+  };
 
   return (
     <article className="card area-inbox">
@@ -30,8 +32,17 @@ export const NotePage = () => {
             {formatDateTime(note.created_at)}
           </time>
           <TagEditor tags={note.tags} onChange={setTags} />
-          {error && <p className="error">{error}</p>}
           <NoteComments comments={comments} pendingIds={pendingCommentIds} onAdd={addComment} />
+          <div className="note-actions">
+            <button type="button" className="btn btn-danger" onClick={onDelete}>
+              {confirming ? 'Точно удалить вместе с комментариями?' : 'Удалить заметку'}
+            </button>
+            {confirming && (
+              <button type="button" className="link" onClick={() => setConfirming(false)}>
+                Отмена
+              </button>
+            )}
+          </div>
         </>
       )}
     </article>

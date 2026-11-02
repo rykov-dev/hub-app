@@ -9,18 +9,9 @@ const themeScript = `try{var t=localStorage.getItem('theme');if(t==='light'||t==
 export default defineConfig({
   plugins: [pluginReact()],
   // GitHub Pages serves the app from /<repo>/; set by the deploy workflow.
-  server: {
-    base: process.env.BASE_PATH ?? '/',
-    // Dev only: the chat's local model (scripts/bonsai.sh), same-origin so no CORS.
-    proxy: {
-      '/llm': {
-        target: process.env.BONSAI_URL ?? 'http://127.0.0.1:8081',
-        pathRewrite: { '^/llm': '' },
-      },
-    },
-  },
+  server: { base: process.env.BASE_PATH ?? '/' },
   html: {
-    title: 'Монетки',
+    title: 'Deity',
     tags: [
       { tag: 'script', children: themeScript, head: true, append: false },
       { tag: 'link', attrs: { rel: 'manifest', href: 'manifest.webmanifest' } },
@@ -30,7 +21,7 @@ export default defineConfig({
     meta: {
       // viewport-fit=cover exposes safe-area insets for the fixed Inbox button.
       viewport: 'width=device-width, initial-scale=1.0, viewport-fit=cover',
-      description: 'Заходи каждый день и собирай монетки.',
+      description: 'Inbox для мыслей с шифрованием на устройстве. Работает офлайн.',
       // Matches --bg of each theme in src/App.css.
       'theme-color-light': {
         name: 'theme-color',
@@ -43,7 +34,7 @@ export default defineConfig({
         media: '(prefers-color-scheme: dark)',
       },
       'apple-mobile-web-app-capable': 'yes',
-      'apple-mobile-web-app-title': 'Монетки',
+      'apple-mobile-web-app-title': 'Deity',
       'apple-mobile-web-app-status-bar-style': 'default',
     },
   },

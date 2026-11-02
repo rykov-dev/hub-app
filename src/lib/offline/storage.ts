@@ -3,6 +3,7 @@ import { createStore, del, delMany, get, getMany, keys, set } from 'idb-keyval';
 // IndexedDB can be unavailable (private windows, blocked storage), and then
 // idb-keyval may throw synchronously as well as reject. The app then just
 // works without offline data.
+// The database keeps its first name so data on existing devices stays.
 const store = createStore('monetki', 'kv');
 
 const safely = async <T>(operation: () => Promise<T>): Promise<T | undefined> => {
@@ -32,11 +33,11 @@ export const readStoredByPrefix = async <T>(prefix: string): Promise<T[]> => {
   return (values ?? []).filter((v): v is T => v !== undefined);
 };
 
-/** Deletes keys starting with `prefix`, except those starting with `keepPrefix`. */
-export const clearStored = async (prefix: string, keepPrefix?: string): Promise<void> => {
+/** Deletes keys starting with `prefix`, except those starting with one of `keepPrefixes`. */
+export const clearStored = async (prefix: string, keepPrefixes: string[] = []): Promise<void> => {
   await safely(async () => {
     const doomed = (await keysWithPrefix(prefix)).filter(
-      (k) => !(keepPrefix && String(k).startsWith(keepPrefix)),
+      (k) => !keepPrefixes.some((keep) => String(k).startsWith(keep)),
     );
     await delMany(doomed, store);
   });

@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Only the release branch is deployed; main is for development.
 on:
   push:
-    branches: [main]
+    branches: [release/v1]
   workflow_dispatch:
 
 permissions:
@@ -29,8 +30,6 @@ jobs:
           BASE_PATH: /${{ github.event.repository.name }}/
           # Public values: the publishable key is meant to ship in the client bundle.
           PUBLIC_SUPABASE_URL: https://vfnpkkzaxsraakeacchg.supabase.co
-          # Repository variable (Settings → Secrets and variables → Actions → Variables).
-          PUBLIC_WORLD_URL: ${{ vars.WORLD_URL }}
           PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_7iAuefoe5tkTwRg9oyqfXQ_WH-hbh_3
       # GitHub Pages has no SPA fallback: serve the app for unknown paths like /inbox.
       - run: cp dist/index.html dist/404.html
