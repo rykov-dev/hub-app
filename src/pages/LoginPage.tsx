@@ -1,20 +1,42 @@
+import { useState } from 'react';
 import { EmailAuthForm } from '../components/EmailAuthForm';
 import { OAuthButtons } from '../components/OAuthButtons';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { resetDeviceData } from '../lib/auth';
 
-export const LoginPage = () => (
-  <div className="layout layout-center">
-    <main className="card login area-login">
-      <div className="login-top">
-        <ThemeToggle />
-      </div>
-      <h1>Монетки</h1>
-      <p className="muted">Заходи каждый день и собирай монетки.</p>
-      <OAuthButtons />
-      <div className="divider">
-        <span>или по email</span>
-      </div>
-      <EmailAuthForm />
-    </main>
-  </div>
-);
+export const LoginPage = () => {
+  const [resetting, setResetting] = useState(false);
+
+  const reset = async () => {
+    if (!window.confirm('Удалить локальные данные приложения на этом устройстве и начать с нуля?')) {
+      return;
+    }
+
+    setResetting(true);
+    await resetDeviceData();
+    window.location.reload();
+  };
+
+  return (
+    <div className="layout layout-center">
+      <main className="card login area-login">
+        <div className="login-top">
+          <ThemeToggle />
+        </div>
+        <h1>Монетки</h1>
+        <p className="muted">Заходи каждый день и собирай монетки.</p>
+        <OAuthButtons />
+        <div className="divider">
+          <span>или по email</span>
+        </div>
+        <EmailAuthForm />
+        <div className="divider">
+          <span>нет ключа на этом устройстве?</span>
+        </div>
+        <button type="button" className="link" disabled={resetting} onClick={reset}>
+          {resetting ? 'Удаляем данные…' : 'Начать с нуля'}
+        </button>
+      </main>
+    </div>
+  );
+};
