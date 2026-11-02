@@ -29,7 +29,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run build
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          BASE_PATH: /
           # Public values: the publishable key is meant to ship in the client bundle.
           PUBLIC_SUPABASE_URL: https://vfnpkkzaxsraakeacchg.supabase.co
           PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_7iAuefoe5tkTwRg9oyqfXQ_WH-hbh_3
