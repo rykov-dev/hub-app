@@ -59,16 +59,22 @@ React + Rsbuild фронтенд, Supabase (Postgres, Auth, Storage, Edge Functi
 
 ## Локальный запуск
 
-Нужны bun и Docker.
+Проще всего — в dev-контейнере (`.devcontainer/`): VS Code «Reopen in Container» или GitHub
+Codespaces. В нём bun нужной версии, Node и Docker для локального Supabase; зависимости ставятся
+при создании контейнера. Без контейнера нужны bun, Node и Docker.
 
 ```sh
-bun install
-cp .env.example .env
-bun run db:start              # поднимает Supabase и применяет миграции
-bunx supabase status          # для локальной БД: publishable key → PUBLIC_SUPABASE_PUBLISHABLE_KEY в .env
+bun install                   # в контейнере уже сделано
+bun run db:start              # поднимает Supabase в Docker и применяет миграции
+bun run local:env             # пишет URL и ключ локального Supabase в .env.local
 bun run functions:serve       # edge functions (в отдельном терминале)
 bun run dev                   # http://localhost:3000
 ```
+
+`.env.local` перекрывает `.env`; чтобы снова работать с удалённым проектом, удали его
+(для удалённого: `cp .env.example .env` и publishable key из `bunx supabase projects api-keys`).
+Studio локальной базы — http://localhost:54323. Вход локально — по email и паролю
+(Google и GitHub настроены только в удалённом проекте).
 
 ## Деплой
 

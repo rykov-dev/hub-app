@@ -1,0 +1,27 @@
+{
+  "name": "Deity",
+  "build": { "dockerfile": "Dockerfile" },
+  "features": {
+    // Local Supabase runs its services as Docker containers.
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    // The Supabase CLI and Rsbuild run on Node.
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "forwardPorts": [3000, 54321, 54323, 54324],
+  "portsAttributes": {
+    "3000": { "label": "App" },
+    "54321": { "label": "Supabase API" },
+    "54323": { "label": "Supabase Studio" },
+    "54324": { "label": "Mailpit" }
+  },
+  "postCreateCommand": "bun install --frozen-lockfile",
+  "customizations": {
+    "vscode": {
+      "extensions": ["denoland.vscode-deno"],
+      "settings": {
+        // Deno only for edge functions; the app itself is TypeScript for the browser.
+        "deno.enablePaths": ["supabase/functions"]
+      }
+    }
+  }
+}
