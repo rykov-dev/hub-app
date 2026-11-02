@@ -1,4 +1,4 @@
-import { createStore, del, delMany, get, getMany, keys, set } from 'idb-keyval';
+import { clear, createStore, del, delMany, get, getMany, keys, set } from 'idb-keyval';
 
 // IndexedDB can be unavailable (private windows, blocked storage), and then
 // idb-keyval may throw synchronously as well as reject. The app then just
@@ -41,4 +41,9 @@ export const clearStored = async (prefix: string, keepPrefixes: string[] = []): 
     );
     await delMany(doomed, store);
   });
+};
+
+/** Removes every piece of offline app data stored on this device. */
+export const clearAllStored = async (): Promise<void> => {
+  await safely(() => clear(store));
 };
