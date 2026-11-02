@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { outboxPrefix } from './offline/outbox';
-import { clearStored } from './offline/storage';
+import { clearAllStored, clearStored } from './offline/storage';
 import { supabase } from './supabase';
 
 /**
@@ -27,4 +27,20 @@ export const readStoredSession = (): Session | null => {
 export const signOut = async (userId: string) => {
   await supabase.auth.signOut();
   await clearStored(`${userId}:`, [outboxPrefix(userId), `${userId}:outbox:`]);
+};
+
+/**
+ * Resets this device to a clean state when its auth key/session is gone.
+ * Server data is intentionally untouched because there is no authenticated
+ * identity to prove which account should be deleted.
+ */
+export const resetDeviceData = async (): Promise<void> => {
+  try {
+    const key = (supabase.auth as unknown as { storageKey: string }).storageKey;
+    localStorage.removeItem(key);
+  } catch {
+    // localStorage can be unavailable; IndexedDB cleanup below is still useful.
+  }
+
+  await clearAllStored();
 };
