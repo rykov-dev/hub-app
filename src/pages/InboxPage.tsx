@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { InboxNoteList } from '../components/InboxNoteList';
 import { Loader } from '../components/Loader';
 import { useInboxNotes } from '../hooks/useInboxNotes';
@@ -12,6 +13,7 @@ export const InboxPage = () => {
     <>
       {error && <p className="error">{error}</p>}
       <InboxNoteList className="area-inbox" notes={notes} pendingIds={pendingIds} />
+      <p className="muted small"><Link to="/settings/import-vault">Перенести заметки из старого Deity Vault</Link></p>
     </>
   );
 };
