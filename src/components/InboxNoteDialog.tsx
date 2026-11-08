@@ -1,5 +1,4 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { inboxNoteReward } from '../lib/api';
 import { outbox } from '../lib/offline/outbox';
 
 const MAX_LENGTH = 10_000;
@@ -7,8 +6,7 @@ const MAX_LENGTH = 10_000;
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Called with the coins the note earned. */
-  onSaved: (reward: number) => void;
+  onSaved: () => void;
 };
 
 /**
@@ -28,7 +26,6 @@ export const InboxNoteDialog = ({ open, onClose, onSaved }: Props) => {
   }, [open]);
 
   const text = body.trim();
-  const reward = inboxNoteReward(text);
 
   // Saved locally right away and synced in the background, so it works offline.
   const save = () => {
@@ -38,7 +35,7 @@ export const InboxNoteDialog = ({ open, onClose, onSaved }: Props) => {
       note: { id: crypto.randomUUID(), body: text, tags: [], created_at: new Date().toISOString() },
     });
     setBody('');
-    onSaved(reward);
+    onSaved();
     onClose();
   };
 
@@ -76,7 +73,6 @@ export const InboxNoteDialog = ({ open, onClose, onSaved }: Props) => {
           onKeyDown={onKeyDown}
         />
         <div className="sheet-actions">
-          <span className="muted sheet-reward">+{reward} мон.</span>
           <button type="button" className="link" onClick={onClose}>
             Отмена
           </button>
