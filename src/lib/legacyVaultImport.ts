@@ -88,12 +88,16 @@ export const importLegacyVault = async (
     if (!path.endsWith(`/${value.id}.bin`) || !value.id || !value.body) {
       throw new Error(`Некорректная заметка: ${path}`);
     }
-    const { error } = await supabase.from('inbox_notes').insert({
-      id: value.id, body: value.body, tags: value.tags, created_at: value.created_at,
+    // Import through a dedicated RPC: ordinary inserts trigger coin rewards.
+    const { data: inserted, error } = await supabase.rpc('import_legacy_vault_note', {
+      p_id: value.id,
+      p_body: value.body,
+      p_tags: value.tags ?? [],
+      p_created_at: value.created_at,
     });
-    if (error?.code === '23505') result.skipped++;
-    else if (error) throw new Error(`Заметка ${value.id}: ${error.message}`);
-    else result.notes++;
+    if (error) throw new Error(`Заметка ${value.id}: ${error.message}`);
+    if (inserted) result.notes++;
+    else result.skipped++;
     onProgress(`Заметки: ${result.notes + result.skipped} / ${notes.length}`);
   }
   for (const path of comments) {
