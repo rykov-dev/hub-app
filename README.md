@@ -51,19 +51,34 @@ React + Rsbuild фронтенд, Supabase (Postgres, Auth, Edge Functions) вм
 - Награды требуют сервера: монеты за заметку начисляются при синхронизации, ежедневная награда —
   при появлении сети, время офлайн в 15 минут не засчитывается.
 - При выходе офлайн-данные удаляются с устройства, кроме несинхронизированных изменений.
+- Версия офлайн-данных — `LOCAL_DATA_VERSION` в `src/lib/offline/storage.ts`. Если на устройстве
+  данные старой версии, при запуске они стираются целиком (так убраны ключ и кэш прежнего
+  зашифрованного Vault).
+
+## Хранение данных
+
+Данные хранятся в Supabase Postgres открытым текстом, доступ ограничен Supabase Auth и RLS,
+транспорт — HTTPS. Клиентского шифрования нет: прежний Deity Vault (v1.0.0) убран, данные при
+переходе стёрты. Подробнее и о возможном возврате шифрования — [docs/encryption.md](docs/encryption.md).
 
 ## Локальный запуск
 
-Нужны bun и Docker.
+Проще всего — в dev-контейнере (`.devcontainer/`): VS Code «Reopen in Container» или GitHub
+Codespaces. В нём bun нужной версии, Node и Docker для локального Supabase; зависимости ставятся
+при создании контейнера. Без контейнера нужны bun, Node и Docker.
 
 ```sh
-bun install
-cp .env.example .env
-bun run db:start              # поднимает Supabase и применяет миграции
-bunx supabase status          # для локальной БД: publishable key → PUBLIC_SUPABASE_PUBLISHABLE_KEY в .env
+bun install                   # в контейнере уже сделано
+bun run db:start              # поднимает Supabase в Docker и применяет миграции
+bun run local:env             # пишет URL и ключ локального Supabase в .env.local
 bun run functions:serve       # edge functions (в отдельном терминале)
 bun run dev                   # http://localhost:3000
 ```
+
+`.env.local` перекрывает `.env`; чтобы снова работать с удалённым проектом, удали его
+(для удалённого: `cp .env.example .env` и publishable key из `bunx supabase projects api-keys`).
+Studio локальной базы — http://localhost:54323. Вход локально — по email и паролю
+(Google и GitHub настроены только в удалённом проекте).
 
 ## Деплой
 
@@ -81,5 +96,17 @@ Google и GitHub включаются в Dashboard → Authentication → Sign I
 `https://vfnpkkzaxsraakeacchg.supabase.co/auth/v1/callback`. Адреса, куда можно вернуться после входа,
 заданы в `additional_redirect_urls` в `supabase/config.toml`.
 
-Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` только из ветки
-`release/v1` (Settings → Pages → Source: GitHub Actions). `main` — ветка разработки, она не деплоится. Сайт: https://rykov-dev.github.io/hub-app/
+Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` из ветки `release`
+(Settings → Pages → Source: GitHub Actions). Сайт: https://rykov-dev.github.io/hub-app/
+
+## Ветки и релизы
+
+- Вся разработка — только в `main`: код, миграции, документация, версия в `package.json`.
+- `release` лишь указывает на выпущенную версию. В неё не коммитят, не делают cherry-pick и merge.
+- Выпуск версии:
+  1. В `main` поднять `version` в `package.json`, закоммитить.
+  2. Поставить тег на этот коммит: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
+  3. Передвинуть `release` на тег: `git push origin vX.Y.Z vX.Y.Z^{commit}:refs/heads/release`
+     (это fast-forward; push в `release` запускает деплой).
+  4. Миграции применить `bun run deploy`.
+- Откат — передвинуть `release` на предыдущий тег (`git push --force origin vX.Y.Z^{commit}:refs/heads/release`).

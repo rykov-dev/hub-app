@@ -46,3 +46,18 @@ export const clearStored = async (prefix: string, keepPrefix?: string): Promise<
 export const clearAllStored = async (): Promise<void> => {
   await safely(() => clear(store));
 };
+
+// Bump when data kept on devices by an older release must not be used any
+// more. Version 2: the encrypted Vault is gone and server data was reset, so
+// its key, encrypted cache and queued uploads are dropped.
+const LOCAL_DATA_VERSION = 2;
+const versionKey = 'local-data-version';
+
+/** Clears this device's offline data once if an older release wrote it. */
+export const migrateLocalData = async (): Promise<void> => {
+  await safely(async () => {
+    if ((await get<number>(versionKey, store)) === LOCAL_DATA_VERSION) return;
+    await clear(store);
+    await set(versionKey, LOCAL_DATA_VERSION, store);
+  });
+};

@@ -13,6 +13,7 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
+    "local:env": "scripts/local-env.sh",
     "functions:serve": "supabase functions serve",
     "deploy": "supabase db push --linked --yes && supabase functions deploy --use-api"
   },
