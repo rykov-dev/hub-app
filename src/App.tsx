@@ -11,7 +11,6 @@ import { KnowledgePage } from './pages/KnowledgePage';
 import { LinksPage } from './pages/LinksPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotePage } from './pages/NotePage';
-import { VaultImportPage } from './pages/VaultImportPage';
 
 // BASE_URL is '/hub-app/' on GitHub Pages and '/' locally.
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
@@ -32,7 +31,6 @@ const App = () => {
           <Route path="knowledge" element={<KnowledgePage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="inbox/:noteId" element={<NotePage />} />
-          <Route path="settings/import-vault" element={<VaultImportPage />} />
           <Route path="chat/:chatId?" element={<ChatPage />} />
           <Route path="game" element={<GamePage />} />
           <Route path="world" element={<Navigate to="/game" replace />} />
