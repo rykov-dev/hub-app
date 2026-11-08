@@ -66,11 +66,14 @@ const procs: Proc[] = [
   { name: 'web', cmd: ['bunx', 'rsbuild', 'dev'] },
 ];
 
+// The chat's local model; main (prod) has no chat and no scripts/bonsai.sh.
 const bonsaiDir = process.env.BONSAI_DIR ?? join(root, '..', 'bonsai');
-if (existsSync(join(bonsaiDir, 'bin', 'llama-server'))) {
-  procs.push({ name: 'bonsai', cmd: ['scripts/bonsai.sh'] });
-} else {
-  console.log(`ℹ Bonsai не найден в ${bonsaiDir}: чат будет без модели.`);
+if (existsSync('scripts/bonsai.sh')) {
+  if (existsSync(join(bonsaiDir, 'bin', 'llama-server'))) {
+    procs.push({ name: 'bonsai', cmd: ['scripts/bonsai.sh'] });
+  } else {
+    console.log(`ℹ Bonsai не найден в ${bonsaiDir}: чат будет без модели.`);
+  }
 }
 
 const colors = ['\x1b[36m', '\x1b[35m', '\x1b[33m'];
