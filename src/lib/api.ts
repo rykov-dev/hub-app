@@ -77,9 +77,6 @@ export const fetchInboxNotes = async (limit = 100): Promise<InboxNote[]> => {
   return data;
 };
 
-/** Coins for an inbox note: 1 per character, as the server counts them (trimmed, code points). */
-export const inboxNoteReward = (body: string) => [...body.trim()].length;
-
 /**
  * Ids and timestamps come from the client so a note created offline keeps
  * them, and a retried insert hits the primary key instead of duplicating.

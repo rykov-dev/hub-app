@@ -1,15 +1,15 @@
 import type { User } from '@supabase/supabase-js';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useOutletContext } from 'react-router';
 import { InboxButton } from '../components/InboxButton';
 import { InboxNoteDialog } from '../components/InboxNoteDialog';
 import { Loader } from '../components/Loader';
 import { Topbar } from '../components/Topbar';
 import { useOnline } from '../hooks/useOnline';
-import { useOutbox, useOutboxApplied } from '../hooks/useOutbox';
+import { useOutbox } from '../hooks/useOutbox';
 import { useRewards } from '../hooks/useRewards';
 import type { Profile } from '../lib/api';
-import { type OutboxItem, outbox } from '../lib/offline/outbox';
+import { outbox } from '../lib/offline/outbox';
 
 type RewardsState = ReturnType<typeof useRewards>;
 
@@ -37,17 +37,7 @@ export const AppLayout = ({ user }: { user: User }) => {
     return () => clearTimeout(id);
   }, [notice]);
 
-  const { profile, profileLoading, error, refresh } = rewards;
-
-  // Coins for a note are granted by the server when the note reaches it.
-  useOutboxApplied(
-    useCallback(
-      (item: OutboxItem) => {
-        if (item.kind === 'addNote') refresh();
-      },
-      [refresh],
-    ),
-  );
+  const { profile, profileLoading, error } = rewards;
 
   if (!profile) {
     if (profileLoading) return <Loader />;
@@ -87,12 +77,8 @@ export const AppLayout = ({ user }: { user: User }) => {
       <InboxNoteDialog
         open={inboxOpen}
         onClose={() => setInboxOpen(false)}
-        onSaved={(reward) =>
-          setNotice(
-            online
-              ? `Сохранено в Inbox · +${reward} мон.`
-              : `Сохранено офлайн · +${reward} мон. после синхронизации`,
-          )
+        onSaved={() =>
+          setNotice(online ? 'Сохранено в Inbox' : 'Сохранено офлайн, отправится при появлении сети')
         }
       />
       {notice && (
