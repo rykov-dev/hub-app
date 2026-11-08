@@ -7,7 +7,7 @@
 пока заглушки. Список разделов — `src/lib/sections.ts`.
 
 Чат работает только в dev-среде, с локальной моделью Bonsai (llama.cpp, OpenAI-совместимый API):
-`bun run bonsai` запускает `../bonsai/bin/llama-server` на `127.0.0.1:8081`, dev-сервер проксирует
+`bun dev` (или отдельно `bun run bonsai`) запускает `../bonsai/bin/llama-server` на `127.0.0.1:8081`, dev-сервер проксирует
 к нему `/llm`. Настройки чата (модель, системный промпт, температура, лимиты) —
 `src/lib/chat/config.ts`; путь, модель и порт сервера меняются через `BONSAI_DIR`, `BONSAI_MODEL`,
 `BONSAI_PORT`, адрес для прокси — `BONSAI_URL`. В продакшен-сборке чат остаётся заглушкой.
@@ -67,22 +67,24 @@ Codespaces. В нём bun нужной версии, Node и Docker для ло�
 
 ```sh
 bun install                   # в контейнере уже сделано
-bun run db:start              # поднимает Supabase в Docker и применяет миграции
-bun run local:env             # пишет URL и ключ локального Supabase в .env.local
-bun run functions:serve       # edge functions (в отдельном терминале)
-bun run dev                   # http://localhost:3000
+bun dev                       # всё окружение разработки, http://localhost:3000
 ```
 
-`.env.local` перекрывает `.env`; чтобы снова работать с удалённым проектом, удали его
-(для удалённого: `cp .env.example .env` и publishable key из `bunx supabase projects api-keys`).
-Studio локальной базы — http://localhost:54323. Вход локально — по email и паролю
-(Google и GitHub настроены только в удалённом проекте).
+`bun dev` (`scripts/dev.ts`):
+1. поднимает локальный Supabase в Docker, если он не запущен (миграции применяются при старте);
+2. пишет его URL и ключ в `.env.local`, поэтому в dev приложение работает только с локальной базой;
+3. запускает edge functions, dev-сервер Rsbuild и, если `../bonsai` есть, локальную модель для чата.
+
+Ctrl+C останавливает процессы, Supabase остаётся работать (`bun run db:stop` — остановить,
+`bun run db:reset` — пересоздать базу с нуля). Только фронтенд без остального — `bun run dev:web`.
+Studio локальной базы — http://localhost:54323, письма — http://localhost:54324. Вход локально —
+по email и паролю (Google и GitHub настроены только в удалённом проекте).
 
 ## Деплой
 
 ```sh
 bunx supabase link --project-ref <ref>
-bun run deploy
+bun deploy                    # выпуск версии, см. «Ветки и релизы»
 ```
 
 В Dashboard → Authentication → Sign In / Providers → Email выключить «Confirm email»
@@ -104,10 +106,17 @@ Environments → github-pages разрешить деплой из тегов `v
 - `main` — прод: в неё попадают только готовые изменения из `dev` (merge), напрямую в `main`
   не коммитим.
 - Деплоятся только коммиты `main` с тегом версии; push в `main` или `dev` сам по себе ничего не деплоит.
-- Выпуск версии:
-  1. В `dev` поднять `version` в `package.json`, закоммитить.
-  2. `git switch main && git merge --ff-only dev` (или merge-коммит, если `main` ушла вперёд хотфиксом).
-  3. `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin main vX.Y.Z` — тег запускает деплой.
-  4. Миграции применить `bun run deploy` (из `main`).
+- Выпуск версии — `bun deploy [patch|minor|major|X.Y.Z]` из `dev` (по умолчанию `patch`,
+  `scripts/deploy.ts`):
+  1. проверяет: ветка `dev`, нет незакоммиченных изменений, `dev` и `main` не отстают от origin,
+     typecheck и сборка проходят;
+  2. поднимает `version` в `package.json` и коммитит `chore: release vX.Y.Z` в `dev`;
+  3. делает merge `dev` → `main` (конфликт только в `package.json` разрешает сам — в `main` своё
+     название пакета), проверяет сборку на `main` и ставит тег `vX.Y.Z`;
+  4. показывает миграции, которых ещё нет в production, и спрашивает подтверждение (`--yes` — без
+     вопроса); до этого места всё откатывается при отмене или ошибке;
+  5. применяет миграции и деплоит edge functions в Supabase, пушит `dev`, `main` и тег — тег
+     запускает деплой фронтенда.
+  Нужен `supabase link --project-ref vfnpkkzaxsraakeacchg`.
 - Откат — повторно запустить деплой старого тега (Actions → Deploy → Re-run) или выпустить
   новую версию с исправлением.
