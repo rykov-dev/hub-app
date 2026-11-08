@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 # Only the release branch is deployed; main is for development.
 on:
   push:
-    branches: [release/v1]
+    branches: [release]
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     # A manual run started from another branch is skipped, not deployed.
-    if: github.ref == 'refs/heads/release/v1'
+    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run build
         env:
-          BASE_PATH: /${{ github.event.repository.name }}/
+          BASE_PATH: /
           # Public values: the publishable key is meant to ship in the client bundle.
           PUBLIC_SUPABASE_URL: https://vfnpkkzaxsraakeacchg.supabase.co
           # Repository variable (Settings → Secrets and variables → Actions → Variables).
