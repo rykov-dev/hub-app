@@ -1,10 +1,7 @@
 import {
-  type Chat,
   type InboxNote,
   type NoteComment,
-  type SavedChatMessage,
-  insertChat,
-  insertChatMessage,
+  deleteInboxNote,
   insertInboxNote,
   insertNoteComment,
   updateNoteTags,
@@ -21,9 +18,7 @@ export type OutboxChange =
   | { kind: 'addNote'; note: InboxNote }
   | { kind: 'setTags'; noteId: string; tags: string[] }
   | { kind: 'addComment'; noteId: string; comment: NoteComment }
-  // Queued before its messages, so the chat reaches the server first.
-  | { kind: 'addChat'; chat: Chat }
-  | { kind: 'addChatMessage'; chatId: string; message: SavedChatMessage };
+  | { kind: 'deleteNote'; noteId: string };
 
 export type OutboxItem = OutboxChange & {
   id: string;
@@ -88,10 +83,8 @@ const send = (item: OutboxItem): Promise<void> => {
       return updateNoteTags(item.noteId, item.tags);
     case 'addComment':
       return ignoreDuplicate(insertNoteComment(item.noteId, item.comment));
-    case 'addChat':
-      return ignoreDuplicate(insertChat(item.chat));
-    case 'addChatMessage':
-      return ignoreDuplicate(insertChatMessage(item.chatId, item.message));
+    case 'deleteNote':
+      return deleteInboxNote(item.noteId);
   }
 };
 
@@ -100,8 +93,7 @@ const describe = (item: OutboxItem, e: unknown) => {
     addNote: 'заметку',
     setTags: 'теги',
     addComment: 'комментарий',
-    addChat: 'чат',
-    addChatMessage: 'сообщение чата',
+    deleteNote: 'удаление заметки',
   }[item.kind];
   return `Не удалось сохранить ${what}: ${(e as Error).message ?? e}`;
 };
@@ -191,6 +183,19 @@ export const outbox = {
           remove(stale);
         }
       }
+    }
+    if (item.kind === 'deleteNote') {
+      // Changes to the note still waiting are pointless now. A note that never
+      // reached the server needs no delete either.
+      const noteOf = (i: OutboxItem) =>
+        i.kind === 'addNote' ? i.note.id : i.kind === 'deleteNote' ? null : i.noteId;
+      const neverSent = state.items.some(
+        (i) => i !== inFlight && i.kind === 'addNote' && i.note.id === item.noteId,
+      );
+      for (const stale of state.items) {
+        if (stale !== inFlight && noteOf(stale) === item.noteId) remove(stale);
+      }
+      if (neverSent) return;
     }
     put(item);
     sync();

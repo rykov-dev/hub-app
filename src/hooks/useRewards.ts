@@ -2,21 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   type CoinTransaction,
   type DailyClaimResult,
-  type HeartbeatResult,
   type Profile,
   claimDaily,
-  endSession,
   fetchProfile,
   fetchTransactions,
-  sendHeartbeat,
 } from '../lib/api';
 import { isNetworkError } from '../lib/offline/network';
 import { useCachedQuery } from './useCachedQuery';
 import { useOnline } from './useOnline';
-
-const HEARTBEAT_INTERVAL_MS = 60_000;
-
-export type Activity = HeartbeatResult & { receivedAt: number };
 
 // One daily claim per user per page load, so a remount (e.g. StrictMode)
 // doesn't replace the "claimed" result with a repeated "already claimed".
@@ -34,12 +27,10 @@ const claimDailyOnce = (userId: string) => {
 const fetchRecentTransactions = () => fetchTransactions();
 
 /**
- * Loads the user's coins, claims the daily visit reward and sends heartbeats
- * while the tab is visible until today's time reward is earned.
+ * Loads the user's coins and streak and claims the daily visit reward.
  *
- * Coins and history are kept for offline use. Rewards need the server, so
- * offline they simply wait: the daily claim is retried when the connection
- * comes back, and time offline doesn't count towards the 15 minutes.
+ * Coins and history are kept for offline use. The reward needs the server,
+ * so offline it waits and is claimed when the connection comes back.
  */
 export const useRewards = (userId: string) => {
   const online = useOnline();
@@ -49,7 +40,6 @@ export const useRewards = (userId: string) => {
     fetchRecentTransactions,
   );
   const [dailyClaim, setDailyClaim] = useState<DailyClaimResult | null>(null);
-  const [activity, setActivity] = useState<Activity | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const refetchProfile = profileQuery.refetch;
@@ -72,79 +62,12 @@ export const useRewards = (userId: string) => {
     };
   }, [userId, online, refresh]);
 
-  // Without a connection the server session lapses, so drop the stale timer.
-  useEffect(() => {
-    if (!online) setActivity(null);
-  }, [online]);
-
-  const rewardedToday = activity?.rewarded_today ?? false;
-
-  useEffect(() => {
-    if (rewardedToday || !online) return;
-
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    // Bumped on every stop so responses from a previous session are ignored.
-    let generation = 0;
-    let running = false;
-    // Requests are chained so the server sees them in order: a leave never
-    // overtakes an in-flight beat, and a beat never overtakes the leave.
-    let lastRequest: Promise<unknown> = Promise.resolve();
-
-    const beat = async (gen: number) => {
-      if (gen !== generation) return;
-      let delay = HEARTBEAT_INTERVAL_MS;
-      try {
-        const request = sendHeartbeat();
-        lastRequest = request.catch(() => {});
-        const result = await request;
-        if (gen !== generation) return;
-        setActivity({ ...result, receivedAt: Date.now() });
-        if (result.granted) refresh();
-        if (result.rewarded_today) return;
-        // Beat right when the session reaches 15 minutes so the reward isn't delayed.
-        const remainingMs = (result.required_seconds - result.session_seconds) * 1000;
-        delay = Math.min(delay, Math.max(remainingMs + 1000, 1000));
-      } catch (e) {
-        if (gen !== generation) return;
-        if (!isNetworkError(e)) setError(String((e as Error).message ?? e));
-      }
-      timer = setTimeout(() => beat(gen), delay);
-    };
-
-    const start = () => {
-      if (running || document.visibilityState !== 'visible') return;
-      running = true;
-      const gen = generation;
-      lastRequest.then(() => beat(gen));
-    };
-    const stop = () => {
-      running = false;
-      generation++;
-      clearTimeout(timer);
-    };
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') return start();
-      stop();
-      // Leaving the tab breaks the continuous session.
-      setActivity(null);
-      lastRequest = lastRequest.then(() => endSession()).catch(() => {});
-    };
-
-    start();
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [userId, rewardedToday, online, refresh]);
-
   return {
     profile: profileQuery.data ?? null,
     /** True until the cached or fetched profile is known. */
     profileLoading: profileQuery.loading && profileQuery.data === undefined,
     transactions: transactionsQuery.data ?? [],
     dailyClaim,
-    activity,
     error: error ?? profileQuery.error ?? transactionsQuery.error,
     refresh,
   };

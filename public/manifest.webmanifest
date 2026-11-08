@@ -1,7 +1,7 @@
 {
-  "name": "Монетки",
-  "short_name": "Монетки",
-  "description": "Заходи каждый день и собирай монетки.",
+  "name": "Deity",
+  "short_name": "Deity",
+  "description": "Inbox для мыслей с шифрованием на устройстве. Работает офлайн.",
   "lang": "ru",
   "start_url": "./",
   "scope": "./",

@@ -24,7 +24,7 @@ export const readStoredSession = (): Session | null => {
  */
 export const signOut = async (userId: string) => {
   await supabase.auth.signOut();
-  await clearStored(`${userId}:`, `${userId}:outbox:`);
+  await clearStored(`${userId}:`, [`${userId}:outbox:`]);
 };
 
 /**

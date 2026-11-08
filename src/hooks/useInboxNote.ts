@@ -69,6 +69,8 @@ export const useInboxNote = (userId: string, id: string) => {
     [id],
   );
 
+  const remove = useCallback(() => outbox.enqueue({ kind: 'deleteNote', noteId: id }), [id]);
+
   return {
     note,
     comments,
@@ -76,5 +78,6 @@ export const useInboxNote = (userId: string, id: string) => {
     error: noteQuery.error ?? commentsQuery.error,
     setTags,
     addComment,
+    remove,
   };
 };

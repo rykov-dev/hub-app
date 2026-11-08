@@ -18,11 +18,7 @@ export type AppContext = Omit<RewardsState, 'profile'> & { profile: Profile };
 /** Typed access to the layout's context from pages. */
 export const useAppContext = () => useOutletContext<AppContext>();
 
-/**
- * Shell for signed-in pages: top bar with tabs, the Inbox button and dialog.
- * Rewards live here rather than in a page so that switching tabs doesn't stop
- * heartbeats and break the continuous time-on-site session.
- */
+/** Shell for signed-in pages: top bar, the Inbox button and dialog. */
 export const AppLayout = ({ user }: { user: User }) => {
   const rewards = useRewards(user.id);
   const online = useOnline();

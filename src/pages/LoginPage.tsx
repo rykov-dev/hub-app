@@ -23,8 +23,8 @@ export const LoginPage = () => {
         <div className="login-top">
           <ThemeToggle />
         </div>
-        <h1>Монетки</h1>
-        <p className="muted">Заходи каждый день и собирай монетки.</p>
+        <h1>Deity</h1>
+        <p className="muted">Записывай мысли в Inbox. Они шифруются на твоём устройстве.</p>
         <OAuthButtons />
         <div className="divider">
           <span>или по email</span>

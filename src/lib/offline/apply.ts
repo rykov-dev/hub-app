@@ -1,4 +1,4 @@
-import type { Chat, InboxNote, NoteComment, SavedChatMessage } from '../api';
+import type { InboxNote, NoteComment } from '../api';
 import type { OutboxItem } from './outbox';
 
 // Applying queued changes to server data gives what the user should see: used
@@ -10,6 +10,8 @@ export const applyToNotes = (notes: InboxNote[], item: OutboxItem): InboxNote[] 
       return notes.some((n) => n.id === item.note.id) ? notes : [item.note, ...notes];
     case 'setTags':
       return notes.map((n) => (n.id === item.noteId ? { ...n, tags: item.tags } : n));
+    case 'deleteNote':
+      return notes.filter((n) => n.id !== item.noteId);
     default:
       return notes;
   }
@@ -18,6 +20,7 @@ export const applyToNotes = (notes: InboxNote[], item: OutboxItem): InboxNote[] 
 export const applyToNote = (note: InboxNote | null, id: string, item: OutboxItem) => {
   if (item.kind === 'addNote' && item.note.id === id) return note ?? item.note;
   if (item.kind === 'setTags' && item.noteId === id && note) return { ...note, tags: item.tags };
+  if (item.kind === 'deleteNote' && item.noteId === id) return null;
   return note;
 };
 
@@ -31,32 +34,3 @@ export const applyToComments = (
   !comments.some((c) => c.id === item.comment.id)
     ? [...comments, item.comment]
     : comments;
-
-export const applyToChats = (chats: Chat[], item: OutboxItem): Chat[] => {
-  switch (item.kind) {
-    case 'addChat':
-      return chats.some((c) => c.id === item.chat.id) ? chats : [item.chat, ...chats];
-    case 'addChatMessage': {
-      // A new message lifts its chat to the top, as the server's updated_at does.
-      const chat = chats.find((c) => c.id === item.chatId);
-      if (!chat || chat.updated_at >= item.message.created_at) return chats;
-      return [
-        { ...chat, updated_at: item.message.created_at },
-        ...chats.filter((c) => c !== chat),
-      ];
-    }
-    default:
-      return chats;
-  }
-};
-
-export const applyToChatMessages = (
-  messages: SavedChatMessage[],
-  chatId: string,
-  item: OutboxItem,
-): SavedChatMessage[] =>
-  item.kind === 'addChatMessage' &&
-  item.chatId === chatId &&
-  !messages.some((m) => m.id === item.message.id)
-    ? [...messages, item.message]
-    : messages;

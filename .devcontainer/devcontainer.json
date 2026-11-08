@@ -1,5 +1,5 @@
 {
-  "name": "Монетки",
+  "name": "Deity",
   "build": { "dockerfile": "Dockerfile" },
   "features": {
     // Local Supabase runs its services as Docker containers.

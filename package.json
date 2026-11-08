@@ -1,5 +1,5 @@
 {
-  "name": "coins-app",
+  "name": "deity",
   "version": "1.0.1",
   "private": true,
   "type": "module",
@@ -8,7 +8,6 @@
     "build": "rsbuild build",
     "dev": "rsbuild",
     "preview": "rsbuild preview",
-    "bonsai": "scripts/bonsai.sh",
     "typecheck": "tsc --noEmit",
     "db:start": "supabase start",
     "db:stop": "supabase stop",

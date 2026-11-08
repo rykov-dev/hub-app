@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 import { Loader } from '../components/Loader';
 import { NoteComments } from '../components/NoteComments';
 import { TagEditor } from '../components/TagEditor';
@@ -9,10 +10,19 @@ import { formatDateTime } from '../lib/format';
 export const NotePage = () => {
   const { noteId = '' } = useParams();
   const { profile } = useAppContext();
-  const { note, comments, pendingCommentIds, error, setTags, addComment } = useInboxNote(
+  const navigate = useNavigate();
+  const { note, comments, pendingCommentIds, error, setTags, addComment, remove } = useInboxNote(
     profile.id,
     noteId,
   );
+  // Deleting takes a second click, so a slip doesn't lose a note.
+  const [confirming, setConfirming] = useState(false);
+
+  const onDelete = () => {
+    if (!confirming) return setConfirming(true);
+    remove();
+    navigate('/inbox', { replace: true });
+  };
 
   if (note === undefined) return error ? <p className="error">{error}</p> : <Loader inline />;
 
@@ -32,6 +42,16 @@ export const NotePage = () => {
           <TagEditor tags={note.tags} onChange={setTags} />
           {error && <p className="error">{error}</p>}
           <NoteComments comments={comments} pendingIds={pendingCommentIds} onAdd={addComment} />
+          <div className="note-actions">
+            <button type="button" className="btn btn-danger" onClick={onDelete}>
+              {confirming ? 'Точно удалить вместе с комментариями?' : 'Удалить заметку'}
+            </button>
+            {confirming && (
+              <button type="button" className="link" onClick={() => setConfirming(false)}>
+                Отмена
+              </button>
+            )}
+          </div>
         </>
       )}
     </article>
