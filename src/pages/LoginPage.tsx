@@ -31,7 +31,7 @@ export const LoginPage = () => {
         </div>
         <EmailAuthForm />
         <div className="divider">
-          <span>нет ключа на этом устройстве?</span>
+          <span>Проблемы со входом или локальными данными?</span>
         </div>
         <button type="button" className="link" disabled={resetting} onClick={reset}>
           {resetting ? 'Удаляем данные…' : 'Начать с нуля'}
