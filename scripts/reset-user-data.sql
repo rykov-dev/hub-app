@@ -17,7 +17,6 @@ truncate table
   public.inbox_note_comments,
   public.inbox_notes,
   public.coin_transactions,
-  public.daily_activity,
   public.activity_sessions
 restart identity;
 
