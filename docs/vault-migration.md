@@ -5,13 +5,13 @@
 ## Состояние
 
 - v1.0.0 (тег) — последний релиз с Deity Vault: зашифрованные объекты в Supabase Storage, ключ импортировался на каждом устройстве.
-- v1.0.1 — Inbox в PostgreSQL с RLS и Supabase Auth, Vault-кода нет. `release` указывает на этот тег.
+- v1.0.1 — Inbox в PostgreSQL с RLS и Supabase Auth, Vault-кода нет.
 - Миграция `20261108010000_retire_vault.sql` удаляет `set_vault_key`, `import_legacy_vault_note`, `profiles.vault_key_fingerprint` и policies bucket `vault`.
 - На устройствах старые данные (ключ Vault, зашифрованный кэш, очередь `vault-outbox`) стираются при первом запуске v1.0.1 — `migrateLocalData()` в `src/lib/offline/storage.ts`.
 
 ## Порядок перехода
 
-1. Выпустить v1.0.1 из `main` (`release` → тег v1.0.1, деплой фронтенда).
+1. Выпустить v1.0.1: тег на `main`, деплой фронтенда.
 2. `bun run deploy` — применить миграции, в том числе `retire_vault`.
 3. Выполнить `scripts/reset-user-data.sql` в production: удаляет заметки, комментарии, чаты, монетки и активность, обнуляет показатели профилей; авторизацию и схему не трогает.
 4. Очистить приватный bucket `vault` через Storage API/Dashboard (не удалять строки `storage.objects` SQL-ом), после этого bucket можно удалить в Dashboard.

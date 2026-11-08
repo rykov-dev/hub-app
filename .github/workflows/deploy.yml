@@ -1,10 +1,10 @@
 name: Deploy to GitHub Pages
 
-# Only the release branch is deployed; main is for development.
+# Production deploys only from version tags (vX.Y.Z) on commits in main.
+# dev and untagged main commits are never deployed.
 on:
   push:
-    branches: [release]
-  workflow_dispatch:
+    tags: ['v*']
 
 permissions:
   contents: read
@@ -17,11 +17,14 @@ concurrency:
 
 jobs:
   build:
-    # A manual run started from another branch is skipped, not deployed.
-    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # A tag pushed on a commit outside main (e.g. on dev) is not deployed.
+      - name: Check the tag is on main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/main
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json

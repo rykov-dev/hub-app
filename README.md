@@ -96,17 +96,20 @@ Google и GitHub включаются в Dashboard → Authentication → Sign I
 `https://vfnpkkzaxsraakeacchg.supabase.co/auth/v1/callback`. Адреса, куда можно вернуться после входа,
 заданы в `additional_redirect_urls` в `supabase/config.toml`.
 
-Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` из ветки `release`
-(Settings → Pages → Source: GitHub Actions). Сайт: https://rykov-dev.github.io/hub-app/
+Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` только по тегу
+версии `vX.Y.Z` на коммите из `main` (Settings → Pages → Source: GitHub Actions; в Settings →
+Environments → github-pages разрешить деплой из тегов `v*`). Сайт: https://rykov-dev.github.io/hub-app/
 
 ## Ветки и релизы
 
-- Вся разработка — только в `main`: код, миграции, документация, версия в `package.json`.
-- `release` содержит только выпущенную версию и собирается cherry-pick-ом нужных коммитов из `main`.
-  Своих коммитов и merge в `release` не делаем: правка для релиза — сначала коммит в `main`.
+- `dev` — разработка: все правки и изменения делаются здесь.
+- `main` — прод: в неё попадают только готовые изменения из `dev` (merge), напрямую в `main`
+  не коммитим.
+- Деплоятся только коммиты `main` с тегом версии; push в `main` или `dev` сам по себе ничего не деплоит.
 - Выпуск версии:
-  1. В `main` поднять `version` в `package.json`, закоммитить.
-  2. `git switch release && git cherry-pick -x <коммиты из main>` — нужные изменения и коммит версии.
-  3. Тег на `release`: `git tag -a vX.Y.Z -m "vX.Y.Z"`, затем `git push origin release vX.Y.Z`
-     (push в `release` запускает деплой).
-  4. Миграции применить `bun run deploy`.
+  1. В `dev` поднять `version` в `package.json`, закоммитить.
+  2. `git switch main && git merge --ff-only dev` (или merge-коммит, если `main` ушла вперёд хотфиксом).
+  3. `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin main vX.Y.Z` — тег запускает деплой.
+  4. Миграции применить `bun run deploy` (из `main`).
+- Откат — повторно запустить деплой старого тега (Actions → Deploy → Re-run) или выпустить
+  новую версию с исправлением.
