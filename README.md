@@ -102,11 +102,11 @@ Google и GitHub включаются в Dashboard → Authentication → Sign I
 ## Ветки и релизы
 
 - Вся разработка — только в `main`: код, миграции, документация, версия в `package.json`.
-- `release` лишь указывает на выпущенную версию. В неё не коммитят, не делают cherry-pick и merge.
+- `release` содержит только выпущенную версию и собирается cherry-pick-ом нужных коммитов из `main`.
+  Своих коммитов и merge в `release` не делаем: правка для релиза — сначала коммит в `main`.
 - Выпуск версии:
   1. В `main` поднять `version` в `package.json`, закоммитить.
-  2. Поставить тег на этот коммит: `git tag -a vX.Y.Z -m "vX.Y.Z"`.
-  3. Передвинуть `release` на тег: `git push origin vX.Y.Z vX.Y.Z^{commit}:refs/heads/release`
-     (это fast-forward; push в `release` запускает деплой).
+  2. `git switch release && git cherry-pick -x <коммиты из main>` — нужные изменения и коммит версии.
+  3. Тег на `release`: `git tag -a vX.Y.Z -m "vX.Y.Z"`, затем `git push origin release vX.Y.Z`
+     (push в `release` запускает деплой).
   4. Миграции применить `bun run deploy`.
-- Откат — передвинуть `release` на предыдущий тег (`git push --force origin vX.Y.Z^{commit}:refs/heads/release`).
