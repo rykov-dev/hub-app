@@ -45,56 +45,6 @@ Deity Vault из v1.0.0 убран в v1.0.1, данные при переход
 - Версия офлайн-данных — `LOCAL_DATA_VERSION` в `src/lib/offline/storage.ts`. Если на устройстве
   данные старой версии, при запуске они стираются целиком (так убраны ключ и кэш Vault из v1.0.0).
 
-## Локальный запуск
+## Разработка и выпуск
 
-Проще всего — в dev-контейнере (`.devcontainer/`): VS Code «Reopen in Container» или GitHub
-Codespaces. В нём bun нужной версии, Node и Docker для локального Supabase; зависимости ставятся
-при создании контейнера. Без контейнера нужны bun, Node и Docker.
-
-```sh
-bun install                   # в контейнере уже сделано
-bun run db:start              # поднимает Supabase в Docker и применяет миграции
-bun run local:env             # пишет URL и ключ локального Supabase в .env.local
-bun run functions:serve       # edge functions (в отдельном терминале)
-bun run dev                   # http://localhost:3000
-```
-
-`.env.local` перекрывает `.env`; чтобы снова работать с удалённым проектом, удали его
-(для удалённого: `cp .env.example .env` и publishable key из `bunx supabase projects api-keys`).
-Studio локальной базы — http://localhost:54323. Вход локально — по email и паролю
-(Google и GitHub настроены только в удалённом проекте).
-
-## Деплой
-
-```sh
-bunx supabase link --project-ref <ref>
-bun run deploy
-```
-
-В Dashboard → Authentication → Sign In / Providers → Email выключить «Confirm email»
-(локально это `enable_confirmations = false` в `supabase/config.toml`), иначе после регистрации
-Supabase будет ждать подтверждения по почте.
-
-Google и GitHub включаются в Dashboard → Authentication → Sign In / Providers (ключи OAuth-приложений
-хранятся только там). Callback URL в OAuth-приложениях:
-`https://vfnpkkzaxsraakeacchg.supabase.co/auth/v1/callback`. Адреса, куда можно вернуться после входа,
-заданы в `additional_redirect_urls` в `supabase/config.toml`.
-
-Фронтенд деплоится в GitHub Pages workflow-ом `.github/workflows/deploy.yml` только по тегу
-версии `vX.Y.Z` на коммите из `main` (Settings → Pages → Source: GitHub Actions; в Settings →
-Environments → github-pages разрешить деплой из тегов `v*`). Сайт: https://rykov-dev.github.io/hub-app/
-
-## Ветки и релизы
-
-- `dev` — разработка: все правки и изменения делаются здесь.
-- `main` — прод (Deity): в неё попадают только готовые изменения из `dev` (merge), напрямую в `main`
-  не коммитим. В `main` нет разделов хаба (чат, игра, связи, база знаний, таймер 15 минут) —
-  при merge из `dev` их не возвращать.
-- Деплоятся только коммиты `main` с тегом версии; push в `main` или `dev` сам по себе ничего не деплоит.
-- Выпуск версии:
-  1. В `dev` поднять `version` в `package.json`, закоммитить.
-  2. `git switch main && git merge --ff-only dev` (или merge-коммит, если `main` ушла вперёд хотфиксом).
-  3. `git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin main vX.Y.Z` — тег запускает деплой.
-  4. Миграции применить `bun run deploy` (из `main`).
-- Откат — повторно запустить деплой старого тега (Actions → Deploy → Re-run) или выпустить
-  новую версию с исправлением.
+Запуск (`bun dev`), деплой (`bun run deploy`), ветки и релизы — [docs/development.md](docs/development.md).

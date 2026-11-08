@@ -12,7 +12,7 @@
 ## Порядок перехода
 
 1. Выпустить v1.0.1: тег на `main`, деплой фронтенда.
-2. `bun run deploy` — применить миграции, в том числе `retire_vault`.
+2. `supabase db push --linked` — применить миграции, в том числе `retire_vault`.
 3. Выполнить `scripts/reset-user-data.sql` в production: удаляет заметки, комментарии, чаты, монетки и активность, обнуляет показатели профилей; авторизацию и схему не трогает.
 4. Очистить приватный bucket `vault` через Storage API/Dashboard (не удалять строки `storage.objects` SQL-ом), после этого bucket можно удалить в Dashboard.
 
