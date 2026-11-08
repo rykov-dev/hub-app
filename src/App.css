@@ -221,10 +221,6 @@ body {
   align-items: center;
   gap: 12px;
 }
-.topbar-brand { display: none; }
-@media (min-width: 600px) {
-  .topbar-brand { display: block; }
-}
 
 .sync-status { margin: -8px 0 0; }
 
@@ -263,6 +259,8 @@ body {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  /* Stays on the right on phones, next to the brand. */
+  margin-left: auto;
 }
 .topbar-user .muted {
   display: none;
