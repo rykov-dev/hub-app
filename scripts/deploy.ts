@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
-// Release a new version: `bun deploy [patch|minor|major|X.Y.Z] [--yes]`.
+// Release a new version: `bun run deploy [patch|minor|major|X.Y.Z] [--yes]`.
+// (`bun deploy` without `run` is a subcommand reserved by Bun.)
 //
 //   1. Checks: on `dev`, clean tree, in sync with origin; typecheck + build.
 //   2. Bumps "version" in package.json, commits "chore: release vX.Y.Z" to dev.
@@ -116,11 +117,12 @@ step('Merge dev → main');
 sh(['git', 'switch', '--quiet', 'main']);
 if (!git('merge', '--no-edit', '--no-ff', '-m', `Merge dev for ${tag}`, 'dev').ok) {
   const conflicts = git('diff', '--name-only', '--diff-filter=U').text.split('\n').filter(Boolean);
-  // main keeps its own package name; only the version comes from dev.
-  if (conflicts.length === 1 && conflicts[0] === 'package.json') {
-    sh(['git', 'checkout', '--ours', 'package.json']);
+  // main keeps its own package name and README; only the version comes from dev.
+  const own = new Set(['package.json', 'README.md']);
+  if (conflicts.length > 0 && conflicts.every((f) => own.has(f))) {
+    sh(['git', 'checkout', '--ours', ...conflicts]);
     await setVersion(version);
-    sh(['git', 'add', 'package.json']);
+    sh(['git', 'add', ...conflicts, 'package.json']);
     sh(['git', 'commit', '--quiet', '--no-edit']);
   } else {
     fail(
