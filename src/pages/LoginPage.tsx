@@ -24,7 +24,7 @@ export const LoginPage = () => {
           <ThemeToggle />
         </div>
         <h1>Deity</h1>
-        <p className="muted">Записывай мысли в Inbox. Они шифруются на твоём устройстве.</p>
+        <p className="muted">Записывай мысли, ссылки и фото в Inbox и выбирай посильные дела на день.</p>
         <OAuthButtons />
         <div className="divider">
           <span>или по email</span>

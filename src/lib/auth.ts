@@ -1,4 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
+import { uploadPrefix } from './offline/outbox';
 import { clearAllStored, clearStored } from './offline/storage';
 import { supabase } from './supabase';
 
@@ -24,7 +25,7 @@ export const readStoredSession = (): Session | null => {
  */
 export const signOut = async (userId: string) => {
   await supabase.auth.signOut();
-  await clearStored(`${userId}:`, [`${userId}:outbox:`]);
+  await clearStored(`${userId}:`, [`${userId}:outbox:`, uploadPrefix(userId)]);
 };
 
 /**

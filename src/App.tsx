@@ -4,9 +4,12 @@ import { Loader } from './components/Loader';
 import { useSession } from './hooks/useSession';
 import { AppLayout } from './layouts/AppLayout';
 import { DashboardPage } from './pages/DashboardPage';
+import { HistoryPage } from './pages/HistoryPage';
 import { InboxPage } from './pages/InboxPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotePage } from './pages/NotePage';
+import { QuestsPage } from './pages/QuestsPage';
+import { TodayPage } from './pages/TodayPage';
 
 // BASE_URL is '/hub-app/' on GitHub Pages and '/' locally.
 const basename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
@@ -23,9 +26,12 @@ const App = () => {
         <Route
           element={session ? <AppLayout user={session.user} /> : <Navigate to="/login" replace />}
         >
-          <Route index element={<DashboardPage />} />
+          <Route index element={<TodayPage />} />
           <Route path="inbox" element={<InboxPage />} />
           <Route path="inbox/:noteId" element={<NotePage />} />
+          <Route path="quests" element={<QuestsPage />} />
+          <Route path="history" element={<HistoryPage />} />
+          <Route path="coins" element={<DashboardPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

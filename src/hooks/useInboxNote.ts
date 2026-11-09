@@ -1,5 +1,11 @@
 import { useCallback, useMemo } from 'react';
-import { type InboxNote, type NoteComment, fetchInboxNote, fetchNoteComments } from '../lib/api';
+import {
+  type InboxNote,
+  type NoteComment,
+  type NotePatch,
+  fetchInboxNote,
+  fetchNoteComments,
+} from '../lib/api';
 import { applyToComments, applyToNote } from '../lib/offline/apply';
 import { type OutboxItem, outbox } from '../lib/offline/outbox';
 import { readStored } from '../lib/offline/storage';
@@ -69,7 +75,16 @@ export const useInboxNote = (userId: string, id: string) => {
     [id],
   );
 
-  const remove = useCallback(() => outbox.enqueue({ kind: 'deleteNote', noteId: id }), [id]);
+  const update = useCallback(
+    (patch: NotePatch) => outbox.enqueue({ kind: 'updateNote', noteId: id, patch }),
+    [id],
+  );
+
+  const imagePath = note?.image_path ?? null;
+  const remove = useCallback(
+    () => outbox.enqueue({ kind: 'deleteNote', noteId: id, imagePath }),
+    [id, imagePath],
+  );
 
   return {
     note,
@@ -77,6 +92,7 @@ export const useInboxNote = (userId: string, id: string) => {
     pendingCommentIds,
     error: noteQuery.error ?? commentsQuery.error,
     setTags,
+    update,
     addComment,
     remove,
   };

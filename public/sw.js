@@ -3,6 +3,8 @@
 // Supabase requests are cross-origin and always go to the network.
 
 const CACHE = 'monetki-v2';
+// Shared content waiting for the app (src/lib/share.ts reads it); keep in sync.
+const SHARE_CACHE = 'share-target';
 const EXTRA = ['icons/icon-192.png', 'icons/icon-512.png'];
 
 // The page registers the worker after it has loaded, so the first visit's
@@ -32,7 +34,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== SHARE_CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -45,9 +47,47 @@ const putInCache = async (request, response) => {
   return response;
 };
 
+// Android "Share" to the installed app posts here (share_target in the
+// manifest). The worker keeps what was shared and opens the app, which picks
+// it up, also after signing in.
+const receiveShare = async (request) => {
+  const scope = self.registration.scope;
+  try {
+    const form = await request.formData();
+    const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const base = new URL(`share-target/${id}/`, scope);
+    const image = form.getAll('image').find((f) => f instanceof File && f.size > 0);
+    const cache = await caches.open(SHARE_CACHE);
+    if (image) {
+      await cache.put(
+        new URL('image', base),
+        new Response(image, { headers: { 'content-type': image.type } }),
+      );
+    }
+    const meta = {
+      title: form.get('title') || '',
+      text: form.get('text') || '',
+      url: form.get('url') || '',
+    };
+    // Meta last: the app looks for it, so it never finds half a share.
+    await cache.put(new URL('meta', base), new Response(JSON.stringify(meta)));
+    return Response.redirect(new URL(`./?share=${id}`, scope).href, 303);
+  } catch {
+    return Response.redirect(new URL('./?share=failed', scope).href, 303);
+  }
+};
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
+  if (
+    request.method === 'POST' &&
+    url.origin === self.location.origin &&
+    url.pathname.endsWith('/share-target')
+  ) {
+    event.respondWith(receiveShare(request));
+    return;
+  }
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
   // Pages: network first so a deploy is picked up right away; cached shell offline.

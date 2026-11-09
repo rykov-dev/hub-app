@@ -21,7 +21,7 @@ export default defineConfig({
     meta: {
       // viewport-fit=cover exposes safe-area insets for the fixed Inbox button.
       viewport: 'width=device-width, initial-scale=1.0, viewport-fit=cover',
-      description: 'Inbox для мыслей с шифрованием на устройстве. Работает офлайн.',
+      description: 'Личный Inbox: мысли, ссылки, фото и квесты на день. Работает офлайн.',
       // Matches --bg of each theme in src/App.css.
       'theme-color-light': {
         name: 'theme-color',

@@ -2,6 +2,8 @@
 -- Run only after the deployed release has switched away from encrypted Vault.
 -- Preserves auth.users, OAuth identities, profiles, schema, RLS and migrations.
 -- Deletes all user-generated Inbox, chats, activity, coin history and resets counters.
+-- Entry images live in the private Storage bucket "attachments": empty it through the
+-- Storage API or Dashboard as well.
 -- To remove old encrypted .bin objects, empty the private Supabase Storage bucket
 -- "vault" using the Storage API or Supabase Dashboard BEFORE deleting the bucket.
 -- Storage objects must not be deleted with direct SQL.
@@ -12,6 +14,9 @@
 begin;
 
 truncate table
+  public.quest_logs,
+  public.quests,
+  public.day_starts,
   public.chat_messages,
   public.chats,
   public.inbox_note_comments,

@@ -3,8 +3,10 @@ import { signOut } from '../lib/auth';
 import { ThemeToggle } from './ThemeToggle';
 
 const tabs = [
-  { to: '/', label: 'Главная' },
+  { to: '/', label: 'Сегодня' },
   { to: '/inbox', label: 'Inbox' },
+  { to: '/quests', label: 'Квесты' },
+  { to: '/history', label: 'История' },
 ];
 
 type Props = {
@@ -17,7 +19,7 @@ export const Topbar = ({ userId, userName }: Props) => (
     <strong className="topbar-brand">Deity</strong>
     <nav className="tabs" aria-label="Разделы">
       {tabs.map((tab) => (
-        // Inbox stays lit on a note's page; Home only on itself.
+        // Inbox stays lit on a note's page; Today only on itself.
         <NavLink key={tab.to} to={tab.to} end={tab.to === '/'} className="tab">
           {tab.label}
         </NavLink>

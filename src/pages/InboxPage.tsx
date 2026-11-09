@@ -11,7 +11,12 @@ export const InboxPage = () => {
   return (
     <>
       {error && <p className="error">{error}</p>}
-      <InboxNoteList className="area-inbox" notes={notes} pendingIds={pendingIds} />
+      <InboxNoteList
+        className="area-inbox"
+        userId={profile.id}
+        notes={notes}
+        pendingIds={pendingIds}
+      />
     </>
   );
 };
