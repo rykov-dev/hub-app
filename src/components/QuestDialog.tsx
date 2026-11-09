@@ -7,7 +7,7 @@ import {
   type QuestPatch,
   type QuestRepeat,
 } from '../lib/api';
-import { addDays, today } from '../lib/dates';
+import { addDays } from '../lib/dates';
 import { categoryHints, categoryLabels, repeatLabels } from '../lib/quests';
 import type { NewQuest } from '../hooks/useQuests';
 
@@ -15,8 +15,8 @@ type Props = {
   open: boolean;
   /** Edits this quest; without it, creates a new one. */
   quest?: Quest | null;
-  /** Date for a new quest; null for "some day". */
-  defaultDate?: string | null;
+  /** The user's current day (see useAppDay); also the date for a new quest. */
+  day: string;
   onClose: () => void;
   onCreate: (quest: NewQuest) => void;
   onUpdate: (id: string, patch: QuestPatch) => void;
@@ -27,7 +27,7 @@ type Props = {
 export const QuestDialog = ({
   open,
   quest,
-  defaultDate = today(),
+  day,
   onClose,
   onCreate,
   onUpdate,
@@ -57,12 +57,12 @@ export const QuestDialog = ({
     setTitle(quest?.title ?? '');
     setCategory(quest?.category ?? 'maintenance');
     setWhy(quest?.why ?? '');
-    setDate(quest ? (quest.date ?? '') : (defaultDate ?? ''));
+    setDate(quest ? (quest.date ?? '') : day);
     setTime(quest?.time?.slice(0, 5) ?? '');
     setRepeat(quest?.repeat ?? 'none');
     setUntil(quest?.repeat_until ?? '');
     setConfirmingDelete(false);
-  }, [open, questId, defaultDate]);
+  }, [open, questId, day]);
 
   const name = title.trim();
   const repeats = date !== '' && repeat !== 'none';
@@ -144,8 +144,8 @@ export const QuestDialog = ({
           <span className="muted small">Когда</span>
           <div className="chips">
             {[
-              { label: 'Сегодня', value: today() },
-              { label: 'Завтра', value: addDays(today(), 1) },
+              { label: 'Сегодня', value: day },
+              { label: 'Завтра', value: addDays(day, 1) },
               { label: 'Когда-нибудь', value: '' },
             ].map((option) => (
               <button

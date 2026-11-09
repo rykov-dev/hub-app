@@ -9,7 +9,7 @@ import { categoryLabels, describeSchedule, logKey, statusLabels } from '../lib/q
 /** Every quest, grouped by how it is planned; tap one to edit it. */
 export const QuestsPage = () => {
   const { profile, day } = useAppContext();
-  const { quests, logs, error, add, update, remove } = useQuests(profile.id);
+  const { quests, logs, error, add, update, remove } = useQuests(profile.id, day);
   const [dialog, setDialog] = useState<{ quest: Quest | null } | null>(null);
 
   const groups = useMemo(() => {
@@ -84,7 +84,7 @@ export const QuestsPage = () => {
       <QuestDialog
         open={dialog !== null}
         quest={dialog?.quest}
-        defaultDate={day}
+        day={day}
         onClose={() => setDialog(null)}
         onCreate={add}
         onUpdate={update}

@@ -8,7 +8,7 @@ import {
   fetchQuestLogs,
   fetchQuests,
 } from '../lib/api';
-import { addDays, today } from '../lib/dates';
+import { addDays } from '../lib/dates';
 import { applyToQuestLogs, applyToQuests } from '../lib/offline/apply';
 import { outbox } from '../lib/offline/outbox';
 import { type Occurrence, indexLogs } from '../lib/quests';
@@ -26,10 +26,11 @@ export type NewQuest = {
 } & QuestPatch;
 
 /** All the user's quests with recent statuses, plus actions; works offline. */
-export const useQuests = (userId: string) => {
+/** `day` is the user's current day (see useAppDay). */
+export const useQuests = (userId: string, day: string) => {
   const quests = useSyncedQuery(`${userId}:quests`, fetchQuests, applyToQuests, noQuests);
   // The window moves with the day; a new key just means a new cached query.
-  const from = addDays(today(), -LOG_DAYS);
+  const from = addDays(day, -LOG_DAYS);
   const logs = useSyncedQuery(
     `${userId}:quest-logs`,
     useCallback(() => fetchQuestLogs(from), [from]),
@@ -84,9 +85,9 @@ export const useQuests = (userId: string) => {
   const postpone = useCallback(
     ({ quest, day }: Occurrence) => {
       setStatus(quest.id, day, 'postponed');
-      if (quest.repeat === 'none') update(quest.id, { date: addDays(today(), 1) });
+      if (quest.repeat === 'none') update(quest.id, { date: addDays(day, 1) });
     },
-    [setStatus, update],
+    [setStatus, update, day],
   );
 
   /** Makes the quest available again that day, undoing a postponed move too. */

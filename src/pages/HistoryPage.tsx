@@ -59,7 +59,7 @@ export const HistoryPage = () => {
     applyToDayStarts,
     noStarts,
   );
-  const { quests } = useQuests(profile.id);
+  const { quests } = useQuests(profile.id, day);
 
   // Pending changes can bring in entries from outside the range.
   const inRange = useCallback((d: string) => d >= from && d <= to, [from, to]);

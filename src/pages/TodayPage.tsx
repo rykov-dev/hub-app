@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { BalanceCard } from '../components/BalanceCard';
 import { Loader } from '../components/Loader';
@@ -6,27 +6,19 @@ import { QuestDialog } from '../components/QuestDialog';
 import { QuestItem } from '../components/QuestItem';
 import { StreakCard } from '../components/StreakCard';
 import { useQuests } from '../hooks/useQuests';
-import { useSyncedQuery } from '../hooks/useSyncedQuery';
 import { useAppContext } from '../layouts/AppLayout';
-import { type DayStart, type Quest, fetchDayStarts } from '../lib/api';
+import type { Quest } from '../lib/api';
 import { formatDay, formatTime } from '../lib/dates';
-import { applyToDayStarts } from '../lib/offline/apply';
 import { categoryLabels, occurrencesFor } from '../lib/quests';
 
-const noStarts: DayStart[] = [];
 /** Above this many planned quests a gentle hint suggests postponing some. */
 const COMFORTABLE = 3;
 
 export const TodayPage = () => {
-  const { profile, dailyClaim, day } = useAppContext();
+  const { profile, dailyClaim, day, startedAt, canStart, startDay } = useAppContext();
   const { quests, logs, error, add, update, remove, setStatus, postpone, reopen } = useQuests(
     profile.id,
-  );
-  const { data: starts } = useSyncedQuery(
-    `${profile.id}:day-starts:${day}`,
-    useCallback(() => fetchDayStarts(day, day), [day]),
-    applyToDayStarts,
-    noStarts,
+    day,
   );
   const [dialog, setDialog] = useState<{ quest: Quest | null } | null>(null);
 
@@ -40,7 +32,6 @@ export const TodayPage = () => {
 
   const planned = todays.filter((o) => !o.log || o.log.status === 'done').length;
   const done = todays.filter((o) => o.log?.status === 'done').length;
-  const start = starts?.find((s) => s.day === day);
 
   return (
     <>
@@ -48,14 +39,25 @@ export const TodayPage = () => {
         <div className="card-header">
           <div>
             <h2>Сегодня, {formatDay(day)}</h2>
-            {start && (
-              <p className="muted small">День начат в {formatTime(start.started_at)}</p>
-            )}
+            {startedAt && <p className="muted small">День начат в {formatTime(startedAt)}</p>}
           </div>
           <button type="button" className="btn btn-small" onClick={() => setDialog({ quest: null })}>
             + Квест
           </button>
         </div>
+
+        {canStart && (
+          <div className="day-start">
+            <button type="button" className="btn btn-primary btn-small" onClick={startDay}>
+              {startedAt ? 'Начать новый день' : 'Начать день'}
+            </button>
+            <span className="muted small">
+              {startedAt
+                ? 'Если уже утро. До 05:00 продолжается этот день.'
+                : 'Отметить, что проснулся. Без отметки день сменится в 05:00.'}
+            </span>
+          </div>
+        )}
 
         {planned === 0 ? (
           <p className="hint">
@@ -142,7 +144,7 @@ export const TodayPage = () => {
       <QuestDialog
         open={dialog !== null}
         quest={dialog?.quest}
-        defaultDate={day}
+        day={day}
         onClose={() => setDialog(null)}
         onCreate={add}
         onUpdate={update}
