@@ -2,15 +2,17 @@
 // Release a new version: `bun run deploy [patch|minor|major|X.Y.Z] [--yes]`.
 // (`bun deploy` without `run` is a subcommand reserved by Bun.)
 //
-//   1. Checks: on `dev`, clean tree, in sync with origin; typecheck + build.
-//   2. Bumps "version" in package.json, commits "chore: release vX.Y.Z" to dev.
-//   3. Merges dev into main (prod), checks typecheck + build there.
-//   4. Applies Supabase migrations and deploys edge functions to production.
-//   5. Pushes dev, main and the vX.Y.Z tag; the tag deploys the frontend
+// Run on `main` after the feature branch was merged into it (see
+// docs/development.md); `dev` is not involved.
+//
+//   1. Checks: on `main`, clean tree, in sync with origin; typecheck + build.
+//   2. Bumps "version" in package.json, commits "chore: release vX.Y.Z" to main
+//      and tags it.
+//   3. Applies Supabase migrations and deploys edge functions to production.
+//   4. Pushes main and the vX.Y.Z tag; the tag deploys the frontend
 //      (.github/workflows/deploy.yml).
 //
 // Nothing is pushed or deployed before the confirmation (skip it with --yes).
-// Ends on dev again.
 import { join } from 'node:path';
 
 const root = join(import.meta.dir, '..');
@@ -20,7 +22,7 @@ const args = process.argv.slice(2);
 const yes = args.includes('--yes') || args.includes('-y');
 const bump = args.find((a) => !a.startsWith('-')) ?? 'patch';
 
-// Undoes local release steps (version commit, merge, tag) until something
+// Undoes local release steps (version commit, tag) until something
 // has been sent to production; after that a failure is left as it is.
 let rollback: (() => void) | null = null;
 
@@ -78,13 +80,11 @@ const check = () => {
 
 // 1. Preconditions
 step('Проверяю репозиторий');
-if (git('branch', '--show-current').text !== 'dev') fail('Выпуск делается из ветки dev.');
+if (git('branch', '--show-current').text !== 'main') fail('Выпуск делается из ветки main.');
 if (git('status', '--porcelain').text) fail('Есть незакоммиченные изменения.');
 sh(['git', 'fetch', '--quiet', '--tags', 'origin'], 'git fetch');
-for (const branch of ['dev', 'main']) {
-  if (git('rev-list', '--count', `${branch}..origin/${branch}`).text !== '0') {
-    fail(`Локальная ${branch} отстаёт от origin/${branch}: сделай git pull.`);
-  }
+if (git('rev-list', '--count', 'main..origin/main').text !== '0') {
+  fail('Локальная main отстаёт от origin/main: сделай git pull.');
 }
 
 const current = (await readPkg()).version as string;
@@ -92,49 +92,29 @@ const version = nextVersion(current);
 const tag = `v${version}`;
 if (git('rev-parse', '-q', '--verify', `refs/tags/${tag}`).ok) fail(`Тег ${tag} уже есть.`);
 
-const pending = git('log', '--oneline', 'main..dev').text;
+const lastTag = git('describe', '--tags', '--abbrev=0', '--match', 'v*').text;
+const pending = git('log', '--oneline', '--first-parent', lastTag ? `${lastTag}..main` : 'main').text;
 console.log(`Версия: ${current} → ${version}`);
-console.log(pending ? `Попадёт в main:\n${pending}` : 'Новых коммитов в dev нет (выйдет только смена версии).');
+console.log(
+  pending
+    ? `Войдёт в выпуск (с ${lastTag || 'начала'}):\n${pending}`
+    : 'Новых коммитов нет (выйдет только смена версии).',
+);
 
 check();
 
-// 2. Version commit on dev
-step(`Коммит версии ${version} в dev`);
-const devHead = git('rev-parse', 'dev').text;
+// 2. Version commit and tag on main
+step(`Коммит версии ${version} и тег ${tag}`);
 const mainHead = git('rev-parse', 'main').text;
 await setVersion(version);
 rollback = () => {
-  git('merge', '--abort');
   git('tag', '-d', tag);
-  git('switch', '--quiet', '--force', 'dev');
-  git('branch', '--force', 'main', mainHead);
-  git('reset', '--quiet', '--hard', devHead);
+  git('reset', '--quiet', '--hard', mainHead);
 };
 sh(['git', 'commit', '--quiet', '-am', `chore: release ${tag}`]);
-
-// 3. Merge into main
-step('Merge dev → main');
-sh(['git', 'switch', '--quiet', 'main']);
-if (!git('merge', '--no-edit', '--no-ff', '-m', `Merge dev for ${tag}`, 'dev').ok) {
-  const conflicts = git('diff', '--name-only', '--diff-filter=U').text.split('\n').filter(Boolean);
-  // main keeps its own package name and README; only the version comes from dev.
-  const own = new Set(['package.json', 'README.md']);
-  if (conflicts.length > 0 && conflicts.every((f) => own.has(f))) {
-    sh(['git', 'checkout', '--ours', ...conflicts]);
-    await setVersion(version);
-    sh(['git', 'add', ...conflicts, 'package.json']);
-    sh(['git', 'commit', '--quiet', '--no-edit']);
-  } else {
-    fail(
-      `Конфликт при merge в main: ${conflicts.join(', ')}.\n` +
-        '  Сделай merge dev → main вручную (разделы хаба в main не возвращать), запушь main и запусти снова.',
-    );
-  }
-}
-check();
 sh(['git', 'tag', '-a', tag, '-m', tag]);
 
-// 4–5. Point of no return
+// 3–4. Point of no return
 step('Миграции, которых ещё нет в production');
 // Table rows look like: `20261108020000` | `20261108020000` | `2026-11-08 02:00:00`
 const list = out(['bunx', 'supabase', 'migration', 'list', '--linked', '--agent', 'no']);
@@ -150,7 +130,7 @@ const remoteOnly = rows.filter(([local, remote]) => remote && !local).map(([, re
 if (remoteOnly.length) fail(`В production есть миграции, которых нет в main: ${remoteOnly.join(', ')}`);
 const missing = rows.filter(([local, remote]) => local && !remote).map(([local]) => local);
 console.log(missing.length ? missing.map((m) => `  • ${m}`).join('\n') : '  нет');
-confirm(`Выпустить ${tag}: миграции и функции в production, push dev/main/${tag}?`);
+confirm(`Выпустить ${tag}: миграции и функции в production, push main/${tag}?`);
 
 rollback = null;
 step('Supabase: миграции и edge functions');
@@ -158,8 +138,7 @@ sh(['bunx', 'supabase', 'db', 'push', '--linked', '--yes']);
 sh(['bunx', 'supabase', 'functions', 'deploy', '--use-api']);
 
 step('Push');
-sh(['git', 'push', '--quiet', 'origin', 'dev', 'main']);
+sh(['git', 'push', '--quiet', 'origin', 'main']);
 sh(['git', 'push', '--quiet', 'origin', tag]);
-sh(['git', 'switch', '--quiet', 'dev']);
 
 console.log(`\n✔ ${tag} выпущен. Фронтенд деплоится: https://github.com/rykov-dev/hub-app/actions`);
