@@ -8,7 +8,9 @@
 - После проверки в `main` вливается сама тематическая ветка, не `dev`. Напрямую в `main` не коммитим.
 - Разделы хаба из `dev` (чат, игра, связи, база знаний, таймер) в `main` не попадают.
 - Деплой — только по тегу `vX.Y.Z` на коммите из `main` (`.github/workflows/deploy.yml`).
-- Выпуск — `bun run deploy [patch|minor|major]` из `main` (`scripts/deploy.ts`), подробно — docs/development.md.
+- Версию (`package.json`) поднимают в тематической ветке до merge в `main`.
+- Выпуск — `bun run deploy` на `main` (`scripts/deploy.ts`): ничего не сливает и не коммитит, только
+  миграции, edge functions и тег. Подробно — docs/development.md.
 - README.md в `main` описывает прод; общее для веток (запуск, деплой, ветки) — в docs/development.md.
 - Окружение разработки — `bun dev` (`scripts/dev.ts`): локальный Supabase, никогда не production.
 
