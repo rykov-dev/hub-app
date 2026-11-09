@@ -43,11 +43,6 @@ export const clearStored = async (prefix: string, keepPrefixes: string[] = []): 
   });
 };
 
-/** Removes every piece of offline app data stored on this device. */
-export const clearAllStored = async (): Promise<void> => {
-  await safely(() => clear(store));
-};
-
 // Bump when data kept on devices by an older release must not be used any
 // more. Version 2: the encrypted Vault is gone and server data was reset, so
 // its key, encrypted cache and queued uploads are dropped.
