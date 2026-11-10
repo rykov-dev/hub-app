@@ -29,7 +29,7 @@ jobs:
         with:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
-      - run: bun run typecheck
+      - run: bunx tsc --noEmit
       - run: bun run build
         env:
           BASE_PATH: /
