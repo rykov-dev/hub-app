@@ -16,7 +16,8 @@ Studio — http://localhost:54323, письма — http://localhost:54324. Вх
 ## Деплой
 
 Фронтенд: workflow `.github/workflows/deploy.yml` деплоит в GitHub Pages по push тега `v*`,
-только если коммит тега есть в `main`.
+только если коммит тега есть в `main`. `bun run deploy` ставит тег `v<version из package.json>`
+на текущий коммит и пушит его.
 
 База и функции (проект `vfnpkkzaxsraakeacchg`, нужен `supabase link`):
 
